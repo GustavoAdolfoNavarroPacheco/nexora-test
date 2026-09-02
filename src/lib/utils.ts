@@ -42,27 +42,27 @@ export function getPriorityMeta(priority: Priority) {
     case 'critica':
       return {
         label: 'Crítica',
-        bg: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/50',
-        dot: 'bg-red-500',
+        bg: 'bg-[#e8b8c4]/30 text-[#0c0a09] border-[#e8b8c4]/60 dark:bg-[#e8b8c4]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#e8b8c4]',
       };
     case 'alta':
       return {
         label: 'Alta',
-        bg: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50',
-        dot: 'bg-amber-500',
+        bg: 'bg-[#f4c5a8]/35 text-[#0c0a09] border-[#f4c5a8]/70 dark:bg-[#f4c5a8]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#f4c5a8]',
       };
     case 'media':
       return {
         label: 'Media',
-        bg: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50',
-        dot: 'bg-blue-500',
+        bg: 'bg-[#a8c8e8]/30 text-[#0c0a09] border-[#a8c8e8]/60 dark:bg-[#a8c8e8]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#a8c8e8]',
       };
     case 'baja':
     default:
       return {
         label: 'Baja',
-        bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-        dot: 'bg-slate-400',
+        bg: 'bg-[#f0efed] text-[#4e4e4e] border-[#e7e5e4] dark:bg-[#292524] dark:text-[#a8a29e] dark:border-[#44403c]',
+        dot: 'bg-[#a8a29e]',
       };
   }
 }
@@ -72,33 +72,33 @@ export function getProjectStatusMeta(status: ProjectStatus) {
     case 'activo':
       return {
         label: 'Activo',
-        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50',
-        dot: 'bg-emerald-500',
+        bg: 'bg-[#a7e5d3]/35 text-[#0c0a09] border-[#a7e5d3]/70 dark:bg-[#a7e5d3]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#a7e5d3]',
       };
     case 'en_pausa':
       return {
         label: 'En pausa',
-        bg: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50',
-        dot: 'bg-amber-500',
+        bg: 'bg-[#f4c5a8]/35 text-[#0c0a09] border-[#f4c5a8]/70 dark:bg-[#f4c5a8]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#f4c5a8]',
       };
     case 'planificacion':
       return {
         label: 'Planificación',
-        bg: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/50',
-        dot: 'bg-indigo-500',
+        bg: 'bg-[#c8b8e0]/35 text-[#0c0a09] border-[#c8b8e0]/70 dark:bg-[#c8b8e0]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#c8b8e0]',
       };
     case 'completado':
       return {
         label: 'Completado',
-        bg: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50',
-        dot: 'bg-blue-500',
+        bg: 'bg-[#f0efed] text-[#292524] border-[#d6d3d1] dark:bg-[#292524] dark:text-[#f5f5f5]',
+        dot: 'bg-[#0c0a09] dark:bg-[#f5f5f5]',
       };
     case 'archivado':
     default:
       return {
         label: 'Archivado',
-        bg: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-        dot: 'bg-slate-400',
+        bg: 'bg-[#f0efed] text-[#777169] border-[#e7e5e4] dark:bg-[#1c1917] dark:text-[#a8a29e] dark:border-[#2e2a27]',
+        dot: 'bg-[#a8a29e]',
       };
   }
 }
@@ -108,27 +108,27 @@ export function getTaskStatusMeta(status: TaskStatus) {
     case 'pendiente':
       return {
         label: 'Pendiente',
-        bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-        dot: 'bg-slate-400',
+        bg: 'bg-[#f0efed] text-[#4e4e4e] border-[#e7e5e4] dark:bg-[#292524] dark:text-[#a8a29e]',
+        dot: 'bg-[#a8a29e]',
       };
     case 'en_progreso':
       return {
         label: 'En progreso',
-        bg: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50',
-        dot: 'bg-blue-500',
+        bg: 'bg-[#a8c8e8]/35 text-[#0c0a09] border-[#a8c8e8]/60 dark:bg-[#a8c8e8]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#a8c8e8]',
       };
     case 'en_revision':
       return {
         label: 'En revisión',
-        bg: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/50',
-        dot: 'bg-purple-500',
+        bg: 'bg-[#c8b8e0]/35 text-[#0c0a09] border-[#c8b8e0]/60 dark:bg-[#c8b8e0]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#c8b8e0]',
       };
     case 'completada':
     default:
       return {
         label: 'Completada',
-        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50',
-        dot: 'bg-emerald-500',
+        bg: 'bg-[#a7e5d3]/35 text-[#0c0a09] border-[#a7e5d3]/70 dark:bg-[#a7e5d3]/20 dark:text-[#f5f5f5]',
+        dot: 'bg-[#a7e5d3]',
       };
   }
 }
@@ -138,21 +138,21 @@ export function getMemberStatusMeta(status: MemberStatus) {
     case 'disponible':
       return {
         label: 'Disponible',
-        color: 'text-emerald-600 dark:text-emerald-400',
-        dot: 'bg-emerald-500',
+        color: 'text-[#0c0a09] dark:text-[#f5f5f5]',
+        dot: 'bg-[#a7e5d3]',
       };
     case 'ocupado':
       return {
         label: 'Ocupado',
-        color: 'text-amber-600 dark:text-amber-400',
-        dot: 'bg-amber-500',
+        color: 'text-[#4e4e4e] dark:text-[#d6d3d1]',
+        dot: 'bg-[#f4c5a8]',
       };
     case 'ausente':
     default:
       return {
         label: 'Ausente',
-        color: 'text-slate-500 dark:text-slate-400',
-        dot: 'bg-slate-400',
+        color: 'text-[#a8a29e]',
+        dot: 'bg-[#a8a29e]',
       };
   }
 }

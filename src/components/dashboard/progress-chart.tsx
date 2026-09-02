@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
 type TimeRange = '7d' | '30d' | '90d';
 
@@ -44,31 +44,31 @@ export function ProgressChart() {
   const maxProgreso = 100;
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+    <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
       {/* Header with Title & Period Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
               Progreso de proyectos
             </h3>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0c0a09] bg-[#a7e5d3]/35 border border-[#a7e5d3]/70 px-2.5 py-0.5 rounded-full dark:bg-[#a7e5d3]/20 dark:text-[#f5f5f5]">
               <TrendingUp className="w-3 h-3" />
               +5.8% este periodo
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-1">
             Evolución porcentual de cumplimiento y tareas completadas
           </p>
         </div>
 
         {/* Time Filter Pill */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 self-start sm:self-auto">
+        <div className="flex items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524] self-start sm:self-auto">
           {(['7d', '30d', '90d'] as TimeRange[]).map((range) => {
             const labels: Record<TimeRange, string> = {
-              '7d': 'Últimos 7 días',
-              '30d': 'Últimos 30 días',
-              '90d': 'Últimos 90 días',
+              '7d': '7 días',
+              '30d': '30 días',
+              '90d': '90 días',
             };
             return (
               <button
@@ -78,10 +78,10 @@ export function ProgressChart() {
                   setHoveredIndex(null);
                 }}
                 className={cn(
-                  'px-3 py-1 text-xs font-medium rounded-lg transition-all',
+                  'px-3.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer',
                   timeRange === range
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs font-semibold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                    : 'text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white'
                 )}
               >
                 {labels[range]}
@@ -91,29 +91,29 @@ export function ProgressChart() {
         </div>
       </div>
 
-      {/* Interactive Visual Bar & Line Visualization */}
+      {/* Interactive Visual Bar Visualization */}
       <div className="pt-6 pb-2">
-        <div className="relative h-48 flex items-end justify-between gap-4 sm:gap-8 px-2 sm:px-6">
-          {/* Y-axis guidelines */}
-          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-[10px] text-slate-400 dark:text-slate-500">
-            <div className="border-b border-dashed border-slate-200 dark:border-slate-800 w-full flex justify-between">
+        <div className="relative h-44 flex items-end justify-between gap-4 sm:gap-8 px-2 sm:px-6">
+          {/* Guidelines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-[10px] text-[#a8a29e]">
+            <div className="border-b border-dashed border-[#e7e5e4] dark:border-[#2e2a27] w-full flex justify-between">
               <span>100%</span>
             </div>
-            <div className="border-b border-dashed border-slate-200 dark:border-slate-800 w-full flex justify-between">
+            <div className="border-b border-dashed border-[#e7e5e4] dark:border-[#2e2a27] w-full flex justify-between">
               <span>75%</span>
             </div>
-            <div className="border-b border-dashed border-slate-200 dark:border-slate-800 w-full flex justify-between">
+            <div className="border-b border-dashed border-[#e7e5e4] dark:border-[#2e2a27] w-full flex justify-between">
               <span>50%</span>
             </div>
-            <div className="border-b border-dashed border-slate-200 dark:border-slate-800 w-full flex justify-between">
+            <div className="border-b border-dashed border-[#e7e5e4] dark:border-[#2e2a27] w-full flex justify-between">
               <span>25%</span>
             </div>
-            <div className="border-b border-slate-200 dark:border-slate-800 w-full flex justify-between">
+            <div className="border-b border-[#e7e5e4] dark:border-[#2e2a27] w-full flex justify-between">
               <span>0%</span>
             </div>
           </div>
 
-          {/* Bars / Columns */}
+          {/* Bars */}
           {points.map((pt, idx) => {
             const isHovered = hoveredIndex === idx;
             const heightPercent = (pt.progreso / maxProgreso) * 100;
@@ -127,20 +127,20 @@ export function ProgressChart() {
               >
                 {/* Tooltip on hover */}
                 {isHovered && (
-                  <div className="absolute -top-14 bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-[11px] font-semibold py-1.5 px-3 rounded-lg shadow-xl z-20 whitespace-nowrap animate-in fade-in duration-150 pointer-events-none">
-                    <p className="font-bold">{pt.label}</p>
-                    <p className="text-slate-300 dark:text-slate-600 text-[10px]">
+                  <div className="absolute -top-12 bg-[#0c0a09] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-lg z-20 whitespace-nowrap pointer-events-none animate-in fade-in duration-100">
+                    <p className="font-semibold">{pt.label}</p>
+                    <p className="text-[#a8a29e] dark:text-[#777169] text-[10px]">
                       {pt.progreso}% completado ({pt.completadas} tareas)
                     </p>
                   </div>
                 )}
 
-                {/* Progress bar column */}
-                <div className="w-full max-w-[48px] bg-slate-100 dark:bg-slate-800 rounded-t-lg overflow-hidden flex flex-col justify-end h-full transition-all group-hover:bg-slate-200 dark:group-hover:bg-slate-700/60">
+                {/* Bar */}
+                <div className="w-full max-w-[36px] bg-[#f0efed] dark:bg-[#292524] rounded-t-lg overflow-hidden flex flex-col justify-end h-full transition-colors">
                   <div
                     className={cn(
-                      'w-full bg-gradient-to-t from-blue-700 to-blue-500 rounded-t-lg transition-all duration-500',
-                      isHovered && 'from-blue-600 to-blue-400 brightness-110'
+                      'w-full bg-[#292524] dark:bg-[#f5f5f5] rounded-t-lg transition-all duration-300',
+                      isHovered && 'bg-[#0c0a09] dark:bg-white'
                     )}
                     style={{ height: `${heightPercent}%` }}
                   />
@@ -149,10 +149,10 @@ export function ProgressChart() {
                 {/* X-axis label */}
                 <span
                   className={cn(
-                    'mt-2 text-xs transition-colors',
+                    'mt-2.5 text-xs transition-colors',
                     isHovered
-                      ? 'font-bold text-blue-600 dark:text-blue-400'
-                      : 'text-slate-500 dark:text-slate-400'
+                      ? 'font-semibold text-[#0c0a09] dark:text-white'
+                      : 'text-[#777169] dark:text-[#a8a29e]'
                   )}
                 >
                   {pt.label}
@@ -164,14 +164,14 @@ export function ProgressChart() {
       </div>
 
       {/* Chart Legend */}
-      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-4 pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27] flex items-center justify-center gap-6 text-xs text-[#777169] dark:text-[#a8a29e]">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-blue-600" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#292524] dark:bg-[#f5f5f5]" />
           <span>Tasa de avance acumulada</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-slate-200 dark:bg-slate-700" />
-          <span>Capacidad total planificada</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-[#f0efed] dark:bg-[#292524]" />
+          <span>Capacidad planificada</span>
         </div>
       </div>
     </div>

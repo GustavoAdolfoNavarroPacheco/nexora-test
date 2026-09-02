@@ -5,183 +5,138 @@ import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import {
-  Settings,
+  Building,
   User,
   Bell,
   Shield,
   Palette,
-  CheckCircle2,
-  Building2,
+  Sun,
+  Moon,
   Laptop,
-  Smartphone,
-  Save,
+  Check,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-type SettingsTab = 'general' | 'perfil' | 'notificaciones' | 'seguridad' | 'apariencia';
-
-export default function ConfiguracionPage() {
+export default function SettingsPage() {
   const { currentUser, theme, setTheme, addToast } = useStore();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [activeSection, setActiveSection] = useState<'general' | 'perfil' | 'notificaciones' | 'seguridad' | 'apariencia'>('general');
 
-  // Workspace form state
-  const [workspaceName, setWorkspaceName] = useState('Acme Corp');
-  const [workspaceSlug, setWorkspaceSlug] = useState('acme-corp');
+  // Form states
+  const [workspaceName, setWorkspaceName] = useState('Acme Corp • Producción');
+  const [userName, setUserName] = useState(currentUser.name);
+  const [userEmail, setUserEmail] = useState(currentUser.email);
+  const [userRole, setUserRole] = useState(currentUser.role);
 
-  // Profile form state
-  const [profileName, setProfileName] = useState(currentUser.name);
-  const [profileEmail, setProfileEmail] = useState(currentUser.email);
-  const [profileRole, setProfileRole] = useState(currentUser.role);
-
-  // Notification toggles
-  const [emailDigest, setEmailDigest] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [assignmentAlerts, setAssignmentAlerts] = useState(true);
-
-  // 2FA
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-
-  const handleSaveGeneral = (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     addToast({
-      title: 'Configuración general guardada',
-      description: 'El nombre y ajustes del workspace se actualizaron.',
+      title: 'Configuración guardada',
+      description: 'Tus preferencias han sido actualizadas en el espacio de trabajo.',
       type: 'success',
     });
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    addToast({
-      title: 'Perfil actualizado',
-      description: 'Tus datos de usuario han sido guardados.',
-      type: 'success',
-    });
-  };
+  const navItems = [
+    { id: 'general', label: 'General', icon: Building },
+    { id: 'perfil', label: 'Perfil', icon: User },
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'seguridad', label: 'Seguridad', icon: Shield },
+    { id: 'apariencia', label: 'Apariencia', icon: Palette },
+  ] as const;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Editorial Header */}
+      <div className="pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
+        <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
           Configuración
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Administra las preferencias de tu cuenta, equipo, seguridad y apariencia de Nexora.
+        <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
+          Administra tu espacio de trabajo, datos de perfil, seguridad y preferencias de interfaz.
         </p>
       </div>
 
-      {/* Main Settings Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Navigation Sidebar: 3 cols */}
-        <div className="lg:col-span-3 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
-          {[
-            { id: 'general', label: 'General', icon: Building2 },
-            { id: 'perfil', label: 'Perfil de usuario', icon: User },
-            { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
-            { id: 'seguridad', label: 'Seguridad & Acceso', icon: Shield },
-            { id: 'apariencia', label: 'Apariencia & Tema', icon: Palette },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        {/* Sidebar Tabs */}
+        <div className="md:col-span-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = activeSection === item.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-left transition-colors',
+                  'w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-xs font-medium text-left transition-all cursor-pointer',
                   active
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                    : 'text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:bg-[#292524]'
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span>{tab.label}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Content Panel: 9 cols */}
-        <div className="lg:col-span-9 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
-          {/* TAB: General */}
-          {activeTab === 'general' && (
-            <form onSubmit={handleSaveGeneral} className="space-y-5">
+        {/* Section Content Area */}
+        <div className="md:col-span-9 p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
+          {/* General */}
+          {activeSection === 'general' && (
+            <form onSubmit={handleSave} className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Configuración del Workspace
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+                  Espacio de trabajo
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Información principal visible para todos los miembros de la organización.
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                  Información pública y configuración general de la organización.
                 </p>
               </div>
 
               <div className="space-y-4 max-w-lg">
                 <Input
-                  label="Nombre de la Organización / Workspace"
+                  label="Nombre de la organización"
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
-                  required
                 />
-
                 <Input
-                  label="URL del Workspace"
-                  value={workspaceSlug}
-                  onChange={(e) => setWorkspaceSlug(e.target.value)}
-                  helperText={`https://app.nexora.io/${workspaceSlug}`}
-                  required
+                  label="Dominio corporativo"
+                  defaultValue="acmecorp.nexora.app"
+                  disabled
+                  helperText="El subdominio principal está vinculado al plan Enterprise."
                 />
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Zona horaria predeterminada
-                  </label>
-                  <select className="w-full h-10 px-3 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100">
-                    <option>América / Bogotá (GMT-5)</option>
-                    <option>América / Ciudad de México (GMT-6)</option>
-                    <option>América / Buenos Aires (GMT-3)</option>
-                    <option>Europa / Madrid (GMT+1)</option>
-                  </select>
-                </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
                 <Button type="submit" variant="primary">
-                  <Save className="w-4 h-4 mr-1.5" />
-                  Guardar configuración
+                  Guardar cambios
                 </Button>
               </div>
             </form>
           )}
 
-          {/* TAB: Perfil */}
-          {activeTab === 'perfil' && (
-            <form onSubmit={handleSaveProfile} className="space-y-5">
+          {/* Perfil */}
+          {activeSection === 'perfil' && (
+            <form onSubmit={handleSave} className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
                   Perfil de usuario
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Actualiza tu información personal y cómo te ven tus compañeros de equipo.
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                  Actualiza tu información personal y cómo te ven tus compañeros.
                 </p>
               </div>
 
-              {/* Avatar section */}
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                <Avatar
-                  src={currentUser.avatar}
-                  name={currentUser.name}
-                  size="lg"
-                  status={currentUser.status}
-                />
+              <div className="flex items-center gap-4 py-2">
+                <Avatar src={currentUser.avatar} name={currentUser.name} size="lg" />
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    Foto de perfil
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Se recomienda un avatar nítido de al menos 200x200 píxeles.
+                  <Button type="button" variant="secondary" size="sm">
+                    Cambiar fotografía
+                  </Button>
+                  <p className="text-[11px] text-[#a8a29e] mt-1.5">
+                    Formatos admitidos: JPG, PNG o WebP hasta 2MB.
                   </p>
                 </div>
               </div>
@@ -189,298 +144,170 @@ export default function ConfiguracionPage() {
               <div className="space-y-4 max-w-lg">
                 <Input
                   label="Nombre completo"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  required
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
                 />
-
                 <Input
-                  type="email"
-                  label="Correo electrónico corporativo"
-                  value={profileEmail}
-                  onChange={(e) => setProfileEmail(e.target.value)}
-                  required
+                  label="Correo electrónico"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
                 />
-
                 <Input
-                  label="Cargo o Rol"
-                  value={profileRole}
-                  onChange={(e) => setProfileRole(e.target.value)}
-                  required
+                  label="Cargo o rol"
+                  value={userRole}
+                  onChange={(e) => setUserRole(e.target.value)}
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
                 <Button type="submit" variant="primary">
-                  <Save className="w-4 h-4 mr-1.5" />
                   Actualizar perfil
                 </Button>
               </div>
             </form>
           )}
 
-          {/* TAB: Notificaciones */}
-          {activeTab === 'notificaciones' && (
-            <div className="space-y-5">
+          {/* Notificaciones */}
+          {activeSection === 'notificaciones' && (
+            <div className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Preferencias de notificaciones
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+                  Preferencias de notificación
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Elige qué eventos quieres recibir por correo y en el navegador.
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                  Elige qué eventos activan alertas y correos informativos.
                 </p>
               </div>
 
-              <div className="space-y-4 divide-y divide-slate-100 dark:divide-slate-800">
-                <div className="flex items-center justify-between pt-3">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                      Resumen semanal por correo
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Recibe los lunes un reporte consolidado con el estado de tus proyectos.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={emailDigest}
-                    onChange={(e) => setEmailDigest(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-3">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                      Notificaciones Push de escritorio
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Alertas en tiempo real cuando se actualice una tarea asignada a ti.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={pushNotifications}
-                    onChange={(e) => setPushNotifications(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded cursor-pointer"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-3">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                      Menciones y comentarios directos
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Notifícame de inmediato cuando alguien me mencione en el feed.
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={assignmentAlerts}
-                    onChange={(e) => setAssignmentAlerts(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <Button
-                  variant="primary"
-                  onClick={() =>
-                    addToast({
-                      title: 'Preferencias guardadas',
-                      type: 'success',
-                    })
-                  }
-                >
-                  <Save className="w-4 h-4 mr-1.5" />
-                  Guardar preferencias
-                </Button>
+              <div className="space-y-3 divide-y divide-[#e7e5e4]/60 dark:divide-[#2e2a27]">
+                {[
+                  {
+                    title: 'Asignación de tareas',
+                    desc: 'Notificar cuando se me asigne una nueva tarea en cualquier proyecto.',
+                    defaultChecked: true,
+                  },
+                  {
+                    title: 'Menciones en comentarios',
+                    desc: 'Notificar cuando un compañero mencione mi usuario en el hilo de una tarea.',
+                    defaultChecked: true,
+                  },
+                  {
+                    title: 'Vencimiento de plazos',
+                    desc: 'Recibir un aviso preventivo 24 horas antes del vencimiento de tareas.',
+                    defaultChecked: true,
+                  },
+                  {
+                    title: 'Resumen semanal por correo',
+                    desc: 'Envío automático los lunes con las métricas y progreso acumulado.',
+                    defaultChecked: false,
+                  },
+                ].map((item, idx) => (
+                  <label
+                    key={idx}
+                    className="flex items-start justify-between gap-4 pt-3 cursor-pointer select-none"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                        {item.desc}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked={item.defaultChecked}
+                      className="mt-1 w-4 h-4 rounded border-[#d6d3d1] accent-[#292524] cursor-pointer"
+                    />
+                  </label>
+                ))}
               </div>
             </div>
           )}
 
-          {/* TAB: Seguridad */}
-          {activeTab === 'seguridad' && (
+          {/* Seguridad */}
+          {activeSection === 'seguridad' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Seguridad & Sesiones Activas
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+                  Seguridad y credenciales
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Gestiona la autenticación de dos factores y tus dispositivos conectados.
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                  Protege el acceso a tu cuenta mediante autenticación segura.
                 </p>
               </div>
 
-              {/* 2FA Card */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                    Autenticación en Dos Pasos (2FA)
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Añade una capa de seguridad adicional utilizando Google Authenticator o 1Password.
-                  </p>
-                </div>
-                <Button
-                  variant={twoFactorEnabled ? 'outline' : 'primary'}
-                  size="sm"
-                  onClick={() => {
-                    setTwoFactorEnabled(!twoFactorEnabled);
-                    addToast({
-                      title: twoFactorEnabled ? '2FA deshabilitado' : '2FA habilitado correctamente',
-                      type: 'info',
-                    });
-                  }}
-                >
-                  {twoFactorEnabled ? 'Desactivar' : 'Configurar 2FA'}
-                </Button>
-              </div>
-
-              {/* Sessions List */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Sesiones activas
+              <div className="p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/50 border border-[#e7e5e4] dark:border-[#44403c] space-y-2 max-w-lg">
+                <h4 className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                  Autenticación en dos pasos (2FA)
                 </h4>
-
-                <div className="space-y-2">
-                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <Laptop className="w-4 h-4 text-slate-500" />
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          Chrome en Windows 11 (Esta sesión)
-                        </p>
-                        <span className="text-[11px] text-emerald-600 font-medium">
-                          Activo ahora • IP 190.25.112.4
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Actual
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="w-4 h-4 text-slate-500" />
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          App Nexora Móvil en iPhone 15 Pro
-                        </p>
-                        <span className="text-[11px] text-slate-400">
-                          Última actividad hace 4 horas
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        addToast({
-                          title: 'Sesión cerrada',
-                          description: 'Se revocó el token del dispositivo móvil.',
-                          type: 'warning',
-                        })
-                      }
-                      className="text-red-600 hover:underline"
-                    >
-                      Cerrar sesión
-                    </button>
-                  </div>
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e]">
+                  Añade una capa extra de protección solicitando un código temporal en cada inicio de sesión.
+                </p>
+                <div className="pt-2">
+                  <Button variant="secondary" size="sm">
+                    Configurar autenticador
+                  </Button>
                 </div>
+              </div>
+
+              <div className="space-y-3 max-w-lg pt-2">
+                <Input type="password" label="Contraseña actual" />
+                <Input type="password" label="Nueva contraseña" />
+                <Input type="password" label="Confirmar nueva contraseña" />
+              </div>
+
+              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
+                <Button variant="primary">Actualizar contraseña</Button>
               </div>
             </div>
           )}
 
-          {/* TAB: Apariencia */}
-          {activeTab === 'apariencia' && (
+          {/* Apariencia */}
+          {activeSection === 'apariencia' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Tema & Apariencia Visual
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+                  Tema y modo visual
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Personaliza cómo se visualiza la plataforma en tu pantalla.
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
+                  Selecciona la apariencia preferida para tu sesión en Nexora.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Claro */}
-                <button
-                  onClick={() => setTheme('light')}
-                  className={cn(
-                    'p-4 rounded-2xl border text-left transition-all space-y-3 cursor-pointer',
-                    theme === 'light'
-                      ? 'border-blue-600 ring-2 ring-blue-600/20 bg-blue-50/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                  )}
-                >
-                  <div className="h-20 rounded-xl bg-slate-100 border border-slate-200 flex flex-col p-2 gap-1.5 overflow-hidden">
-                    <div className="h-2 w-1/3 bg-slate-300 rounded" />
-                    <div className="h-10 bg-white rounded shadow-2xs p-1 flex gap-1">
-                      <div className="w-4 bg-blue-500 rounded-xs" />
-                      <div className="flex-1 bg-slate-100 rounded-xs" />
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      Modo Claro
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Fondo cálido y nítido para entornos iluminados.
-                    </p>
-                  </div>
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg">
+                {[
+                  { id: 'light', label: 'Claro', icon: Sun },
+                  { id: 'dark', label: 'Oscuro', icon: Moon },
+                  { id: 'system', label: 'Sistema', icon: Laptop },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = theme === item.id;
 
-                {/* Oscuro */}
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={cn(
-                    'p-4 rounded-2xl border text-left transition-all space-y-3 cursor-pointer',
-                    theme === 'dark'
-                      ? 'border-blue-600 ring-2 ring-blue-600/20 bg-blue-950/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                  )}
-                >
-                  <div className="h-20 rounded-xl bg-slate-950 border border-slate-800 flex flex-col p-2 gap-1.5 overflow-hidden">
-                    <div className="h-2 w-1/3 bg-slate-700 rounded" />
-                    <div className="h-10 bg-slate-900 rounded border border-slate-800 p-1 flex gap-1">
-                      <div className="w-4 bg-blue-600 rounded-xs" />
-                      <div className="flex-1 bg-slate-800 rounded-xs" />
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      Modo Oscuro
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Contraste refinado y descanso visual para sesiones prolongadas.
-                    </p>
-                  </div>
-                </button>
-
-                {/* Sistema */}
-                <button
-                  onClick={() => setTheme('system')}
-                  className={cn(
-                    'p-4 rounded-2xl border text-left transition-all space-y-3 cursor-pointer',
-                    theme === 'system'
-                      ? 'border-blue-600 ring-2 ring-blue-600/20 bg-blue-50/20'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                  )}
-                >
-                  <div className="h-20 rounded-xl bg-gradient-to-r from-slate-100 to-slate-950 border border-slate-300 flex items-center justify-center">
-                    <Palette className="w-6 h-6 text-slate-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                      Tema del Sistema
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Se sincroniza automáticamente con el modo de tu sistema operativo.
-                    </p>
-                  </div>
-                </button>
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setTheme(item.id as 'light' | 'dark' | 'system')}
+                      className={cn(
+                        'flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition-all cursor-pointer',
+                        isSelected
+                          ? 'border-[#292524] dark:border-[#f5f5f5] bg-[#fafafa] dark:bg-[#292524]'
+                          : 'border-[#e7e5e4] dark:border-[#44403c] bg-white dark:bg-[#1c1917] hover:border-[#a8a29e]'
+                      )}
+                    >
+                      <Icon className="w-5 h-5 mb-2 text-[#292524] dark:text-[#f5f5f5]" />
+                      <span className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                        {item.label}
+                      </span>
+                      {isSelected && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-[#292524] dark:text-[#f5f5f5] mt-1.5 font-medium">
+                          <Check className="w-3 h-3" /> Activo
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

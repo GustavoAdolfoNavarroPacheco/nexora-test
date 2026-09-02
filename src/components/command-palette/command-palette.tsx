@@ -17,7 +17,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn, normalizeText } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 
 export function CommandPalette() {
   const router = useRouter();
@@ -38,7 +37,6 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Global shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -58,7 +56,6 @@ export function CommandPalette() {
     }
   }, [isCommandPaletteOpen]);
 
-  // Filter items
   const cleanQuery = normalizeText(query);
 
   const filteredProjects = cleanQuery
@@ -139,7 +136,6 @@ export function CommandPalette() {
     },
   ];
 
-  // Flatten searchable list for keyboard navigation
   const allItems: {
     id: string;
     type: 'project' | 'task' | 'user' | 'action';
@@ -217,14 +213,14 @@ export function CommandPalette() {
       className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:pt-20"
     >
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+        className="fixed inset-0 bg-[#0c0a09]/45 backdrop-blur-xs animate-in fade-in"
         onClick={() => setIsCommandPaletteOpen(false)}
       />
 
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-2xl shadow-xl z-10 overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
-          <Search className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0" />
+        <div className="flex items-center px-5 py-4 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
+          <Search className="w-4 h-4 text-[#a8a29e] shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -234,18 +230,18 @@ export function CommandPalette() {
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Escribe para buscar proyectos, tareas, equipo o comandos..."
-            className="w-full bg-transparent px-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
+            placeholder="Buscar proyectos, tareas o comandos..."
+            className="w-full bg-transparent px-3.5 text-sm text-[#0c0a09] dark:text-[#f5f5f5] placeholder:text-[#a8a29e] focus:outline-none"
           />
-          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-[#777169] bg-[#f0efed] dark:bg-[#292524] rounded-full border border-[#e7e5e4] dark:border-[#44403c]">
             ESC
           </kbd>
         </div>
 
         {/* Results List */}
-        <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
+        <div className="max-h-[360px] overflow-y-auto p-2.5 space-y-1">
           {allItems.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
+            <div className="p-8 text-center text-[#a8a29e] text-xs">
               No se encontraron resultados para &quot;{query}&quot;
             </div>
           ) : (
@@ -259,32 +255,32 @@ export function CommandPalette() {
                   onClick={item.onSelect}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={cn(
-                    'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-colors',
+                    'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs transition-colors cursor-pointer',
                     isSelected
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09]'
+                      : 'text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#fafafa] dark:hover:bg-[#292524]'
                   )}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className={cn(
-                        'p-2 rounded-lg shrink-0',
+                        'p-2 rounded-full shrink-0',
                         isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          ? 'bg-white/20 text-white dark:bg-black/10 dark:text-[#0c0a09]'
+                          : 'bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]'
                       )}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold truncate">{item.title}</p>
+                      <p className="font-medium truncate">{item.title}</p>
                       {item.subtitle && (
                         <p
                           className={cn(
                             'text-[11px] truncate',
                             isSelected
-                              ? 'text-white/80'
-                              : 'text-slate-400 dark:text-slate-500'
+                              ? 'text-white/80 dark:text-[#0c0a09]/70'
+                              : 'text-[#a8a29e]'
                           )}
                         >
                           {item.subtitle}
@@ -293,14 +289,14 @@ export function CommandPalette() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
                     {item.type === 'project' && (
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-medium',
+                          'px-2.5 py-0.5 rounded-full text-[10px] font-medium border',
                           isSelected
-                            ? 'bg-white/20 text-white'
-                            : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+                            ? 'bg-white/20 text-white border-transparent dark:bg-black/10 dark:text-[#0c0a09]'
+                            : 'bg-[#f0efed] text-[#292524] border-transparent dark:bg-[#292524] dark:text-[#f5f5f5]'
                         )}
                       >
                         Proyecto
@@ -309,10 +305,10 @@ export function CommandPalette() {
                     {item.type === 'task' && (
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-medium',
+                          'px-2.5 py-0.5 rounded-full text-[10px] font-medium border',
                           isSelected
-                            ? 'bg-white/20 text-white'
-                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            ? 'bg-white/20 text-white border-transparent dark:bg-black/10 dark:text-[#0c0a09]'
+                            : 'bg-[#f0efed] text-[#777169] border-transparent dark:bg-[#292524] dark:text-[#a8a29e]'
                         )}
                       >
                         Tarea
@@ -321,7 +317,7 @@ export function CommandPalette() {
                     <ArrowRight
                       className={cn(
                         'w-3.5 h-3.5',
-                        isSelected ? 'text-white' : 'text-slate-400'
+                        isSelected ? 'text-white dark:text-[#0c0a09]' : 'text-[#a8a29e]'
                       )}
                     />
                   </div>
@@ -332,26 +328,23 @@ export function CommandPalette() {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+        <div className="px-5 py-3 bg-[#fafafa] dark:bg-[#1c1917] border-t border-[#e7e5e4] dark:border-[#2e2a27] flex items-center justify-between text-[11px] text-[#a8a29e]">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
-                ↑
-              </kbd>
-              <kbd className="px-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
-                ↓
+            <span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] font-mono">
+                ↑↓
               </kbd>{' '}
               Navegar
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
+            <span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] font-mono">
                 ↵
               </kbd>{' '}
               Seleccionar
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-blue-500" /> Nexora Search Engine
+            <Sparkles className="w-3 h-3 text-[#777169]" /> Nexora System
           </span>
         </div>
       </div>

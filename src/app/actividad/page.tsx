@@ -3,128 +3,102 @@
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import {
   Activity,
   FolderKanban,
   CheckSquare,
   Users,
-  Shield,
-  Filter,
+  Settings,
+  Clock,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-type ActivityFilter = 'all' | 'project' | 'task' | 'team' | 'system';
-
-export default function ActividadPage() {
+export default function ActivityPage() {
   const { activities } = useStore();
-  const [filter, setFilter] = useState<ActivityFilter>('all');
+  const [filter, setFilter] = useState<'todos' | 'proyectos' | 'tareas' | 'equipo' | 'sistema'>('todos');
 
   const filteredActivities = activities.filter((act) => {
-    if (filter === 'all') return true;
-    return act.entityType === filter;
+    if (filter === 'todos') return true;
+    if (filter === 'proyectos') return act.entityType === 'project';
+    if (filter === 'tareas') return act.entityType === 'task';
+    if (filter === 'equipo') return act.entityType === 'team';
+    if (filter === 'sistema') return act.entityType === 'system';
+    return true;
   });
 
-  const getEntityIcon = (type: string) => {
-    switch (type) {
-      case 'project':
-        return <FolderKanban className="w-3.5 h-3.5 text-blue-500" />;
-      case 'task':
-        return <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />;
-      case 'team':
-        return <Users className="w-3.5 h-3.5 text-purple-500" />;
-      default:
-        return <Shield className="w-3.5 h-3.5 text-amber-500" />;
-    }
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Registro de Actividad
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              Auditoría en vivo
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Línea de tiempo cronológica de cambios, asignaciones, estados y eventos del workspace.
+          <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
+            Registro de Actividad
+          </h1>
+          <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
+            Historial cronológico de cambios, creaciones y auditoría en toda la organización.
           </p>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center p-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs overflow-x-auto">
+        <div className="flex flex-wrap items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524] self-start sm:self-auto">
           {(
             [
-              { id: 'all', label: 'Todos' },
-              { id: 'project', label: 'Proyectos' },
-              { id: 'task', label: 'Tareas' },
-              { id: 'team', label: 'Equipo' },
-              { id: 'system', label: 'Sistema' },
+              { id: 'todos', label: 'Todos' },
+              { id: 'proyectos', label: 'Proyectos' },
+              { id: 'tareas', label: 'Tareas' },
+              { id: 'equipo', label: 'Equipo' },
             ] as const
-          ).map((f) => (
+          ).map((tab) => (
             <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors select-none whitespace-nowrap',
-                filter === f.id
-                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                'px-3.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer',
+                filter === tab.id
+                  ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                  : 'text-[#777169] hover:text-[#0c0a09]'
               )}
             >
-              {f.label}
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Timeline Card */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
-        <div className="space-y-6 relative before:absolute before:left-4 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-          {filteredActivities.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              No hay actividades registradas en esta categoría.
-            </div>
-          ) : (
-            filteredActivities.map((event) => (
-              <div key={event.id} className="flex items-start gap-4 pl-1 relative group">
-                <div className="z-10 bg-white dark:bg-slate-900 ring-4 ring-white dark:ring-slate-900 rounded-full">
-                  <Avatar
-                    src={event.user.avatar}
-                    name={event.user.name}
-                    size="xs"
-                  />
-                </div>
+      {/* Activity Timeline Card */}
+      <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
+        <div className="space-y-6 relative before:absolute before:left-4 before:top-3 before:bottom-3 before:w-px before:bg-[#e7e5e4] dark:before:bg-[#2e2a27]">
+          {filteredActivities.map((event) => (
+            <div key={event.id} className="flex items-start gap-4 relative pl-1 group">
+              <Avatar
+                src={event.user.avatar}
+                name={event.user.name}
+                size="sm"
+                className="ring-4 ring-white dark:ring-[#1c1917] z-10 shrink-0"
+              />
 
-                <div className="flex-1 min-w-0 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 group-hover:bg-slate-100/60 dark:group-hover:bg-slate-800/70 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                        {getEntityIcon(event.entityType)}
-                      </span>
-                      <p className="text-xs text-slate-700 dark:text-slate-300">
-                        <span className="font-bold text-slate-900 dark:text-slate-100">
-                          {event.user.name}
-                        </span>{' '}
-                        <span className="text-slate-500">{event.action}</span>{' '}
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          &ldquo;{event.entity}&rdquo;
-                        </span>
-                      </p>
-                    </div>
-
-                    <span className="text-[11px] text-slate-400 shrink-0">
-                      {event.timeAgo}
+              <div className="flex-1 min-w-0 p-4 rounded-xl border border-transparent group-hover:border-[#e7e5e4] dark:group-hover:border-[#2e2a27] group-hover:bg-[#fafafa] dark:group-hover:bg-[#292524]/40 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <p className="text-xs text-[#292524] dark:text-[#f5f5f5] leading-relaxed">
+                    <span className="font-semibold text-[#0c0a09] dark:text-white">
+                      {event.user.name}
+                    </span>{' '}
+                    <span className="text-[#777169] dark:text-[#a8a29e]">{event.action}</span>{' '}
+                    <span className="font-medium text-[#0c0a09] dark:text-white">
+                      &ldquo;{event.entity}&rdquo;
                     </span>
-                  </div>
+                  </p>
+                  <span className="text-[11px] text-[#a8a29e] shrink-0">
+                    {event.timeAgo}
+                  </span>
                 </div>
+
+                <span className="inline-block mt-2 text-[10px] px-2.5 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e] font-medium capitalize">
+                  {event.entityType || 'General'}
+                </span>
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

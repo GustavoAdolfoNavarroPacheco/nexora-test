@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { Drawer } from '@/components/ui/drawer';
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   getPriorityMeta,
@@ -14,14 +13,11 @@ import {
 } from '@/lib/utils';
 import {
   Calendar,
-  CheckCircle2,
-  Clock,
   Send,
   MessageSquare,
   ListTodo,
   FolderKanban,
-  CheckSquare,
-  Trash2,
+  Check,
 } from 'lucide-react';
 import { TaskStatus, Priority } from '@/lib/types';
 import Link from 'next/link';
@@ -35,8 +31,6 @@ export function TaskDetailDrawer() {
     toggleTaskComplete,
     toggleSubtask,
     addCommentToTask,
-    currentUser,
-    users,
   } = useStore();
 
   const [commentText, setCommentText] = useState('');
@@ -45,9 +39,6 @@ export function TaskDetailDrawer() {
   const task = tasks.find((t) => t.id === selectedTaskId);
 
   if (!task) return null;
-
-  const priorityMeta = getPriorityMeta(task.priority);
-  const statusMeta = getTaskStatusMeta(task.status);
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,24 +73,26 @@ export function TaskDetailDrawer() {
     >
       <div className="space-y-6">
         {/* Header Action: Checkbox & Title */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3.5">
           <button
             onClick={() => toggleTaskComplete(task.id)}
-            className="mt-1 p-0.5 rounded text-slate-400 hover:text-emerald-600 transition-colors"
+            className="mt-1 p-0.5 rounded cursor-pointer"
             title={task.completed ? 'Marcar como pendiente' : 'Marcar como completada'}
           >
             {task.completed ? (
-              <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 fill-emerald-100 dark:fill-emerald-950" />
+              <div className="w-5 h-5 rounded bg-[#0c0a09] dark:bg-[#f5f5f5] text-white dark:text-[#0c0a09] flex items-center justify-center">
+                <Check className="w-3 h-3" />
+              </div>
             ) : (
-              <div className="w-6 h-6 rounded-md border-2 border-slate-300 dark:border-slate-700 hover:border-blue-500 transition-colors" />
+              <div className="w-5 h-5 rounded border border-[#d6d3d1] hover:border-[#0c0a09] dark:border-[#44403c] transition-colors" />
             )}
           </button>
 
           <div className="flex-1">
             <h2
               className={cn(
-                'text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug',
-                task.completed && 'line-through text-slate-400 dark:text-slate-500'
+                'font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] leading-snug',
+                task.completed && 'line-through text-[#a8a29e]'
               )}
             >
               {task.title}
@@ -107,7 +100,7 @@ export function TaskDetailDrawer() {
             <Link
               href={`/proyectos/${task.projectId}`}
               onClick={() => setSelectedTaskId(null)}
-              className="inline-flex items-center gap-1.5 mt-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium hover:underline"
+              className="inline-flex items-center gap-1.5 mt-1.5 text-xs text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white font-medium hover:underline"
             >
               <FolderKanban className="w-3.5 h-3.5" />
               {task.projectName}
@@ -116,15 +109,15 @@ export function TaskDetailDrawer() {
         </div>
 
         {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
+        <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/50 border border-[#e7e5e4] dark:border-[#44403c] text-xs">
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block mb-1">Estado</span>
+            <span className="text-[#a8a29e] block mb-1">Estado</span>
             <select
               value={task.status}
               onChange={(e) =>
                 updateTask(task.id, { status: e.target.value as TaskStatus })
               }
-              className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] font-medium text-[#0c0a09] dark:text-[#f5f5f5] focus:outline-none cursor-pointer"
             >
               <option value="pendiente">Pendiente</option>
               <option value="en_progreso">En progreso</option>
@@ -134,13 +127,13 @@ export function TaskDetailDrawer() {
           </div>
 
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block mb-1">Prioridad</span>
+            <span className="text-[#a8a29e] block mb-1">Prioridad</span>
             <select
               value={task.priority}
               onChange={(e) =>
                 updateTask(task.id, { priority: e.target.value as Priority })
               }
-              className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] font-medium text-[#0c0a09] dark:text-[#f5f5f5] focus:outline-none cursor-pointer"
             >
               <option value="baja">Baja</option>
               <option value="media">Media</option>
@@ -150,19 +143,19 @@ export function TaskDetailDrawer() {
           </div>
 
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block mb-1">Responsable</span>
+            <span className="text-[#a8a29e] block mb-1">Responsable</span>
             <div className="flex items-center gap-2 mt-0.5">
               <Avatar src={task.assignee.avatar} name={task.assignee.name} size="xs" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200">
+              <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
                 {task.assignee.name}
               </span>
             </div>
           </div>
 
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block mb-1">Fecha límite</span>
-            <div className="flex items-center gap-1.5 mt-1 font-semibold text-slate-800 dark:text-slate-200">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[#a8a29e] block mb-1">Fecha límite</span>
+            <div className="flex items-center gap-1.5 mt-1 font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
+              <Calendar className="w-3.5 h-3.5 text-[#a8a29e]" />
               <span>{formatDate(task.dueDate)}</span>
             </div>
           </div>
@@ -170,41 +163,36 @@ export function TaskDetailDrawer() {
 
         {/* Description */}
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
             Descripción
           </h4>
-          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <p className="text-sm text-[#4e4e4e] dark:text-[#d6d3d1] leading-relaxed whitespace-pre-line p-4 rounded-xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
             {task.description || 'Sin descripción detallada.'}
           </p>
         </div>
 
         {/* Subtasks Checklist */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <ListTodo className="w-4 h-4 text-blue-500" />
-              Checklist / Subtareas (
-              {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})
-            </h4>
-          </div>
+          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e] flex items-center gap-1.5">
+            <ListTodo className="w-4 h-4 text-[#777169]" />
+            Checklist (
+            {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})
+          </h4>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {task.subtasks.map((st) => (
               <div
                 key={st.id}
                 onClick={() => toggleSubtask(task.id, st.id)}
-                className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-colors"
+                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#fafafa] dark:hover:bg-[#292524] cursor-pointer border border-transparent hover:border-[#e7e5e4] dark:hover:border-[#44403c] transition-colors"
               >
-                <input
-                  type="checkbox"
-                  checked={st.completed}
-                  onChange={() => {}} // Handled by parent div
-                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                />
+                <div className="w-4 h-4 rounded border border-[#d6d3d1] flex items-center justify-center shrink-0">
+                  {st.completed && <Check className="w-3 h-3 text-[#0c0a09] dark:text-white" />}
+                </div>
                 <span
                   className={cn(
-                    'text-xs text-slate-800 dark:text-slate-200 select-none',
-                    st.completed && 'line-through text-slate-400 dark:text-slate-500'
+                    'text-xs text-[#292524] dark:text-[#f5f5f5] select-none',
+                    st.completed && 'line-through text-[#a8a29e]'
                   )}
                 >
                   {st.title}
@@ -218,7 +206,7 @@ export function TaskDetailDrawer() {
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 placeholder="+ Añadir elemento a la checklist..."
-                className="flex-1 px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-slate-200"
+                className="flex-1 h-10 px-3.5 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#292524] text-[#292524] dark:text-[#f5f5f5]"
               />
               <Button type="submit" size="sm" variant="secondary">
                 Agregar
@@ -228,23 +216,22 @@ export function TaskDetailDrawer() {
         </div>
 
         {/* Comments Stream */}
-        <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <MessageSquare className="w-4 h-4 text-blue-500" />
+        <div className="space-y-4 pt-3 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
+          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e] flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4 text-[#777169]" />
             Comentarios ({task.comments.length})
           </h4>
 
-          {/* Comment list */}
           <div className="space-y-3">
             {task.comments.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+              <p className="text-xs text-[#a8a29e] italic">
                 Aún no hay comentarios en esta tarea. Sé el primero en escribir uno.
               </p>
             ) : (
               task.comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5"
+                  className="p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/60 border border-[#e7e5e4] dark:border-[#44403c] space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -253,18 +240,18 @@ export function TaskDetailDrawer() {
                         name={comment.author.name}
                         size="xs"
                       />
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <span className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
                         {comment.author.name}
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-[#a8a29e]">
                       {new Date(comment.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 pl-7 leading-relaxed">
+                  <p className="text-xs text-[#4e4e4e] dark:text-[#d6d3d1] pl-7 leading-relaxed">
                     {comment.content}
                   </p>
                 </div>
@@ -272,14 +259,13 @@ export function TaskDetailDrawer() {
             )}
           </div>
 
-          {/* New Comment Input Form */}
-          <form onSubmit={handleAddComment} className="flex gap-2">
+          <form onSubmit={handleAddComment} className="flex gap-2 pt-1">
             <input
               type="text"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Escribe un comentario..."
-              className="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+              className="flex-1 h-11 px-4 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#292524] text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e]"
             />
             <Button type="submit" size="sm" variant="primary" disabled={!commentText.trim()}>
               <Send className="w-3.5 h-3.5 mr-1" />

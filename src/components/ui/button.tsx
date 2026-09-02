@@ -11,26 +11,26 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading = false, children, disabled, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none select-none active:scale-[0.98]';
+      'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#292524] focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none select-none active:scale-[0.98] cursor-pointer';
 
     const variants = {
       primary:
-        'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow active:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500',
+        'bg-[#292524] text-white hover:bg-[#1c1917] active:bg-[#0c0a09] dark:bg-[#f5f5f5] dark:text-[#0c0a09] dark:hover:bg-[#e7e5e4] shadow-xs',
       secondary:
-        'bg-slate-100 text-slate-800 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
+        'border border-[#e7e5e4] bg-transparent text-[#292524] hover:bg-[#f0efed] active:bg-[#e7e5e4] dark:border-[#44403c] dark:text-[#f5f5f5] dark:hover:bg-[#292524]',
       outline:
-        'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100 shadow-xs dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800',
+        'border border-[#d6d3d1] bg-white text-[#292524] hover:bg-[#fafafa] dark:bg-[#1c1917] dark:border-[#44403c] dark:text-[#f5f5f5] dark:hover:bg-[#292524]',
       ghost:
-        'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800',
+        'bg-transparent text-[#292524] hover:bg-[#f0efed] dark:text-[#f5f5f5] dark:hover:bg-[#292524]',
       danger:
-        'bg-red-600 text-white hover:bg-red-700 shadow-sm active:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500',
+        'bg-[#0c0a09] text-white hover:bg-[#1c1917] border border-[#e8b8c4]/40 dark:bg-[#292524]',
     };
 
     const sizes = {
-      sm: 'h-8 px-3 text-xs gap-1.5',
-      md: 'h-9 px-4 text-sm gap-2',
-      lg: 'h-11 px-5 text-base gap-2.5',
-      icon: 'h-9 w-9 p-0',
+      sm: 'h-8 px-3.5 text-xs gap-1.5',
+      md: 'h-10 px-5 text-[15px] gap-2',
+      lg: 'h-11 px-6 text-base gap-2.5',
+      icon: 'h-9 w-9 p-0 rounded-full',
     };
 
     return (

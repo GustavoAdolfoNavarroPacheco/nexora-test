@@ -21,39 +21,39 @@ export function MetricCard({
   icon: Icon,
   progress,
 }: MetricCardProps) {
-  const trendColors = {
-    positive: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/60 dark:border-emerald-800/60',
-    negative: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200/60 dark:border-red-800/60',
-    warning: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200/60 dark:border-amber-800/60',
-    neutral: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+  const trendStyles = {
+    positive: 'bg-[#a7e5d3]/35 text-[#0c0a09] border-[#a7e5d3]/60 dark:bg-[#a7e5d3]/20 dark:text-[#f5f5f5]',
+    negative: 'bg-[#e8b8c4]/30 text-[#0c0a09] border-[#e8b8c4]/60 dark:bg-[#e8b8c4]/20 dark:text-[#f5f5f5]',
+    warning: 'bg-[#f4c5a8]/35 text-[#0c0a09] border-[#f4c5a8]/60 dark:bg-[#f4c5a8]/20 dark:text-[#f5f5f5]',
+    neutral: 'bg-[#f0efed] text-[#4e4e4e] border-[#e7e5e4] dark:bg-[#292524] dark:text-[#a8a29e]',
   };
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
-      {/* Header */}
+    <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none flex flex-col justify-between transition-colors">
+      {/* Top row */}
       <div className="flex items-start justify-between">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <span className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
             {title}
           </span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="mt-2.5">
+            <span className="font-editorial text-4xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
               {value}
             </span>
           </div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 shrink-0">
-          <Icon className="w-5 h-5" />
+        <div className="w-8 h-8 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#292524] dark:text-[#f5f5f5] flex items-center justify-center shrink-0">
+          <Icon className="w-4 h-4" />
         </div>
       </div>
 
       {/* Progress bar if present */}
       {typeof progress === 'number' && (
-        <div className="mt-3">
-          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <div className="mt-4">
+          <div className="w-full h-1 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
             <div
-              className="h-full bg-blue-600 rounded-full transition-all duration-500"
+              className="h-full bg-[#292524] dark:bg-[#f5f5f5] rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -62,12 +62,12 @@ export function MetricCard({
 
       {/* Trend indicator & Subtitle */}
       {(trend || subtitle) && (
-        <div className="mt-4 flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+        <div className="mt-4 flex items-center gap-2 pt-3 border-t border-[#e7e5e4]/60 dark:border-[#2e2a27]">
           {trend && (
             <span
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
-                trendColors[trendType]
+                'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border',
+                trendStyles[trendType]
               )}
             >
               {trendType === 'positive' && <TrendingUp className="w-3 h-3" />}
@@ -77,7 +77,7 @@ export function MetricCard({
             </span>
           )}
           {subtitle && (
-            <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
+            <span className="text-xs text-[#777169] dark:text-[#a8a29e] truncate">
               {subtitle}
             </span>
           )}

@@ -11,10 +11,7 @@ import {
 } from '@/lib/utils';
 import {
   Calendar,
-  CheckCircle2,
-  MoreHorizontal,
   Plus,
-  MoveRight,
   ListTodo,
 } from 'lucide-react';
 
@@ -27,11 +24,11 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
   const { updateTaskStatus, setSelectedTaskId, setIsCreateTaskOpen } = useStore();
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
 
-  const columns: { status: TaskStatus; title: string; color: string }[] = [
-    { status: 'pendiente', title: 'Pendiente', color: 'border-slate-300 dark:border-slate-700' },
-    { status: 'en_progreso', title: 'En progreso', color: 'border-blue-400 dark:border-blue-700' },
-    { status: 'en_revision', title: 'En revisión', color: 'border-purple-400 dark:border-purple-700' },
-    { status: 'completada', title: 'Completada', color: 'border-emerald-400 dark:border-emerald-700' },
+  const columns: { status: TaskStatus; title: string }[] = [
+    { status: 'pendiente', title: 'Pendiente' },
+    { status: 'en_progreso', title: 'En progreso' },
+    { status: 'en_revision', title: 'En revisión' },
+    { status: 'completada', title: 'Completada' },
   ];
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -62,22 +59,22 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
             key={col.status}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, col.status)}
-            className="flex flex-col bg-slate-100/60 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 min-h-[480px]"
+            className="flex flex-col bg-[#fafafa] dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-2xl p-4 min-h-[480px]"
           >
             {/* Column Header */}
-            <div className="flex items-center justify-between pb-3 px-1 border-b border-slate-200/60 dark:border-slate-800/80">
+            <div className="flex items-center justify-between pb-3 px-1 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
               <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
                   {col.title}
                 </h4>
-                <span className="px-2 py-0.2 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] text-[#292524] dark:text-[#f5f5f5]">
                   {columnTasks.length}
                 </span>
               </div>
 
               <button
                 onClick={() => setIsCreateTaskOpen(true)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                className="p-1 rounded-full text-[#a8a29e] hover:text-[#0c0a09] hover:bg-white dark:hover:bg-[#292524] transition-colors cursor-pointer"
                 title="Añadir tarea a esta columna"
               >
                 <Plus className="w-4 h-4" />
@@ -85,9 +82,9 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
             </div>
 
             {/* Column Cards */}
-            <div className="flex-1 space-y-2.5 pt-3 overflow-y-auto">
+            <div className="flex-1 space-y-3 pt-3 overflow-y-auto">
               {columnTasks.length === 0 ? (
-                <div className="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 italic p-4 text-center">
+                <div className="h-28 border border-dashed border-[#e7e5e4] dark:border-[#44403c] rounded-xl flex items-center justify-center text-xs text-[#a8a29e] italic p-4 text-center">
                   Arrastra tarjetas aquí
                 </div>
               ) : (
@@ -102,20 +99,20 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onClick={() => setSelectedTaskId(task.id)}
                       className={cn(
-                        'p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-md transition-all cursor-pointer group select-none relative',
-                        isDragging && 'opacity-40 border-blue-500'
+                        'p-4 rounded-xl bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] shadow-none hover:border-[#a8a29e] transition-all cursor-pointer group select-none relative',
+                        isDragging && 'opacity-40 border-[#0c0a09]'
                       )}
                     >
                       {/* Priority and Actions */}
                       <div className="flex items-center justify-between gap-1 mb-2">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${priorityMeta.bg}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${priorityMeta.bg}`}
                         >
                           <span className={`w-1 h-1 rounded-full ${priorityMeta.dot}`} />
                           {priorityMeta.label}
                         </span>
 
-                        {/* Move Column Shortcut for accessibility / mobile */}
+                        {/* Move Column Selector */}
                         <div
                           className="flex items-center gap-1"
                           onClick={(e) => e.stopPropagation()}
@@ -125,8 +122,8 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
                             onChange={(e) =>
                               updateTaskStatus(task.id, e.target.value as TaskStatus)
                             }
-                            title="Mover a otra columna"
-                            className="text-[10px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-600 dark:text-slate-400 focus:outline-none"
+                            title="Mover de columna"
+                            className="text-[10px] bg-[#fafafa] dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded px-1.5 py-0.5 text-[#777169] dark:text-[#a8a29e] focus:outline-none cursor-pointer"
                           >
                             <option value="pendiente">Pendiente</option>
                             <option value="en_progreso">En progreso</option>
@@ -137,14 +134,14 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
                       </div>
 
                       {/* Title */}
-                      <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+                      <h5 className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5] group-hover:underline transition-all line-clamp-2 leading-snug">
                         {task.title}
                       </h5>
 
-                      {/* Subtasks counter if any */}
+                      {/* Subtasks counter */}
                       {task.subtasks.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                          <ListTodo className="w-3 h-3 text-slate-400" />
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-[#a8a29e]">
+                          <ListTodo className="w-3 h-3" />
                           <span>
                             {task.subtasks.filter((s) => s.completed).length}/
                             {task.subtasks.length}
@@ -153,7 +150,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
                       )}
 
                       {/* Card Footer: Assignee and Date */}
-                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#e7e5e4]/60 dark:border-[#44403c]/60 text-[11px] text-[#777169] dark:text-[#a8a29e]">
                         <div className="flex items-center gap-1.5">
                           <Avatar
                             src={task.assignee.avatar}
@@ -166,7 +163,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
                         </div>
 
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
+                          <Calendar className="w-3 h-3 text-[#a8a29e]" />
                           <span>{formatDate(task.dueDate)}</span>
                         </div>
                       </div>

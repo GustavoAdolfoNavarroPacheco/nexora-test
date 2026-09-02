@@ -62,7 +62,7 @@ export function Modal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+        className="fixed inset-0 bg-[#0c0a09]/45 backdrop-blur-xs transition-opacity animate-in fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -71,36 +71,36 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          'relative w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-200 focus:outline-none',
+          'relative w-full bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-2xl shadow-xl z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-150 focus:outline-none',
           maxWidths[maxWidth],
           className
         )}
       >
         {(title || description) && (
-          <div className="flex items-start justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-start justify-between p-6 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
             <div>
               {title && (
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
+                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
                   {title}
                 </h3>
               )}
               {description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-1">
                   {description}
                 </p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:hover:text-white dark:hover:bg-[#292524] transition-colors"
               aria-label="Cerrar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );

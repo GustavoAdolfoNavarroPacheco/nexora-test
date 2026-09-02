@@ -13,7 +13,6 @@ import {
   Settings,
   ChevronDown,
   Building2,
-  LogOut,
   Sparkles,
   Layers,
   X,
@@ -68,62 +67,61 @@ export function Sidebar({
 
   const navItemClass = (active: boolean) =>
     cn(
-      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 group select-none',
+      'flex items-center gap-3 px-3.5 py-2 rounded-full text-[15px] font-normal transition-all duration-150 select-none group',
       active
-        ? 'bg-blue-600 text-white shadow-sm font-semibold'
-        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/70'
+        ? 'bg-[#292524] text-white font-medium shadow-xs dark:bg-[#f5f5f5] dark:text-[#0c0a09]'
+        : 'text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:text-white dark:hover:bg-[#292524]'
     );
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 w-64 select-none">
+    <div className="flex flex-col h-full bg-white dark:bg-[#1c1917] border-r border-[#e7e5e4] dark:border-[#2e2a27] w-64 select-none">
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-900 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <Layers className="w-5 h-5 text-white" />
+      <div className="p-5 border-b border-[#e7e5e4] dark:border-[#2e2a27] flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-full bg-[#292524] dark:bg-[#f5f5f5] flex items-center justify-center text-white dark:text-[#0c0a09] transition-transform group-hover:scale-105">
+            <Layers className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100">
-                NEXORA
+              <span className="font-editorial text-xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
+                Nexora
               </span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f0efed] text-[#292524] dark:bg-[#292524] dark:text-[#f5f5f5]">
                 PRO
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">Gestión & Operaciones</p>
           </div>
         </Link>
 
         {onMobileClose && (
           <button
             onClick={onMobileClose}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="md:hidden p-1.5 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed]"
             aria-label="Cerrar navegación"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
       {/* Workspace Selector */}
-      <div className="px-3 pt-3 pb-1 relative">
+      <div className="px-4 pt-4 pb-2 relative">
         <button
           onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 text-left transition-colors"
+          className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#fafafa] hover:bg-[#f0efed] dark:bg-[#292524] dark:hover:bg-[#292524]/80 border border-[#e7e5e4] dark:border-[#44403c] text-left transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+            <Building2 className="w-3.5 h-3.5 text-[#777169] shrink-0" />
+            <span className="text-xs font-medium text-[#292524] dark:text-[#f5f5f5] truncate">
               {currentWorkspace}
             </span>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
+          <ChevronDown className="w-3.5 h-3.5 text-[#a8a29e] shrink-0 ml-1" />
         </button>
 
         {isWorkspaceMenuOpen && (
-          <div className="absolute top-13 left-3 right-3 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="absolute top-14 left-4 right-4 z-30 bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded-xl shadow-lg p-1.5 animate-in fade-in zoom-in-95 duration-100">
+            <div className="px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-[#a8a29e]">
               Espacios de trabajo
             </div>
             {workspaces.map((ws) => (
@@ -134,14 +132,14 @@ export function Sidebar({
                   setIsWorkspaceMenuOpen(false);
                 }}
                 className={cn(
-                  'w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs text-left transition-colors',
+                  'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer',
                   currentWorkspace === ws.name
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-[#f0efed] dark:bg-[#292524] text-[#0c0a09] dark:text-white font-medium'
+                    : 'text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#fafafa] dark:hover:bg-[#292524]'
                 )}
               >
                 <span className="truncate">{ws.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169]">
                   {ws.plan}
                 </span>
               </button>
@@ -151,10 +149,10 @@ export function Sidebar({
       </div>
 
       {/* Navigation Sections */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-6">
         {/* Principal */}
         <div>
-          <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="px-3 mb-2 text-[12px] font-medium uppercase tracking-wider text-[#a8a29e]">
             Principal
           </div>
           <nav className="space-y-1">
@@ -170,8 +168,8 @@ export function Sidebar({
                 >
                   <Icon
                     className={cn(
-                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-110',
-                      active ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-105',
+                      active ? 'text-white dark:text-[#0c0a09]' : 'text-[#777169] dark:text-[#a8a29e]'
                     )}
                   />
                   <span>{item.name}</span>
@@ -183,7 +181,7 @@ export function Sidebar({
 
         {/* Gestión */}
         <div>
-          <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="px-3 mb-2 text-[12px] font-medium uppercase tracking-wider text-[#a8a29e]">
             Gestión
           </div>
           <nav className="space-y-1">
@@ -199,8 +197,8 @@ export function Sidebar({
                 >
                   <Icon
                     className={cn(
-                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-110',
-                      active ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-105',
+                      active ? 'text-white dark:text-[#0c0a09]' : 'text-[#777169] dark:text-[#a8a29e]'
                     )}
                   />
                   <span>{item.name}</span>
@@ -212,7 +210,7 @@ export function Sidebar({
 
         {/* Sistema */}
         <div>
-          <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="px-3 mb-2 text-[12px] font-medium uppercase tracking-wider text-[#a8a29e]">
             Sistema
           </div>
           <nav className="space-y-1">
@@ -228,8 +226,8 @@ export function Sidebar({
                 >
                   <Icon
                     className={cn(
-                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-110',
-                      active ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                      'w-4 h-4 shrink-0 transition-transform group-hover:scale-105',
+                      active ? 'text-white dark:text-[#0c0a09]' : 'text-[#777169] dark:text-[#a8a29e]'
                     )}
                   />
                   <span>{item.name}</span>
@@ -241,8 +239,8 @@ export function Sidebar({
       </div>
 
       {/* Footer User Profile Pill */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/30">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="p-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
+        <div className="flex items-center justify-between p-2.5 rounded-2xl bg-[#fafafa] dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c]">
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar
               src={currentUser.avatar}
@@ -251,10 +249,10 @@ export function Sidebar({
               status={currentUser.status}
             />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+              <p className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5] truncate">
                 {currentUser.name}
               </p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              <p className="text-[11px] text-[#777169] dark:text-[#a8a29e] truncate">
                 {currentUser.role}
               </p>
             </div>
@@ -263,9 +261,9 @@ export function Sidebar({
           <button
             onClick={resetToDefaults}
             title="Restablecer datos de fábrica"
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-[#a8a29e] hover:text-[#0c0a09] dark:hover:text-white hover:bg-white dark:hover:bg-[#1c1917] rounded-full transition-colors cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -274,7 +272,7 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop & Tablet Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className={cn('hidden md:block shrink-0', isCollapsed ? 'w-16' : 'w-64')}>
         <div className="fixed inset-y-0 left-0 z-20">{sidebarContent}</div>
       </aside>
@@ -283,7 +281,7 @@ export function Sidebar({
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+            className="fixed inset-0 bg-[#0c0a09]/45 backdrop-blur-xs animate-in fade-in"
             onClick={onMobileClose}
           />
           <div className="fixed inset-y-0 left-0 z-50 animate-in slide-in-from-left duration-200">

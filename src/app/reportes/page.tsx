@@ -3,245 +3,246 @@
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { MetricCard } from '@/components/dashboard/metric-card';
 import {
   BarChart3,
-  CheckCircle2,
   TrendingUp,
-  AlertTriangle,
-  Clock,
   Download,
   Calendar,
-  Layers,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type ReportPeriod = 'semana' | 'mes' | 'trimestre';
-
-export default function ReportesPage() {
+export default function ReportsPage() {
   const { projects, tasks, addToast } = useStore();
-  const [period, setPeriod] = useState<ReportPeriod>('mes');
+  const [period, setPeriod] = useState<'semana' | 'mes' | 'trimestre'>('mes');
 
-  const completedProjects = projects.filter((p) => p.status === 'completado').length;
-  const activeProjects = projects.filter((p) => p.status === 'activo').length;
-  const pausedProjects = projects.filter((p) => p.status === 'en_pausa').length;
-  const planningProjects = projects.filter((p) => p.status === 'planificacion').length;
-
+  const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.completed).length;
-  const pendingTasks = tasks.filter((t) => !t.completed).length;
+  const inProgressTasks = tasks.filter((t) => t.status === 'en_progreso').length;
+  const inReviewTasks = tasks.filter((t) => t.status === 'en_revision').length;
+  const pendingTasks = tasks.filter((t) => t.status === 'pendiente').length;
 
   const handleExport = () => {
     addToast({
-      title: 'Reporte ejecutivo generado',
-      description: 'El resumen consolidado en PDF ha sido preparado para descarga.',
+      title: 'Reporte generado con éxito',
+      description: 'El resumen ejecutivo ha sido exportado en formato CSV y PDF.',
       type: 'success',
     });
   };
 
-  // Status breakdown data
-  const statusBreakdown = [
-    { label: 'Activo', count: activeProjects, color: 'bg-emerald-500' },
-    { label: 'Planificación', count: planningProjects, color: 'bg-indigo-500' },
-    { label: 'En pausa', count: pausedProjects, color: 'bg-amber-500' },
-    { label: 'Completado', count: completedProjects, color: 'bg-blue-500' },
-  ];
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Reportes & Analítica
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
-              Métricas Operativas
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Supervisa el rendimiento, la velocidad de ejecución y los cuellos de botella del equipo.
+          <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
+            Reportes y Analítica
+          </h1>
+          <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
+            Rendimiento operativo, velocidad de entrega y distribución de carga de trabajo.
           </p>
         </div>
 
-        {/* Period Selector & Export */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center p-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-            {(
-              [
-                { id: 'semana', label: 'Esta semana' },
-                { id: 'mes', label: 'Este mes' },
-                { id: 'trimestre', label: 'Este trimestre' },
-              ] as const
-            ).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPeriod(p.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  period === p.id
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
+        <div className="flex items-center gap-2.5">
+          {/* Period selector pill */}
+          <div className="flex items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524]">
+            {(['semana', 'mes', 'trimestre'] as const).map((p) => {
+              const labels = {
+                semana: 'Esta semana',
+                mes: 'Este mes',
+                trimestre: 'Este trimestre',
+              };
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    'px-3.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer',
+                    period === p
+                      ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                      : 'text-[#777169] hover:text-[#0c0a09]'
+                  )}
+                >
+                  {labels[p]}
+                </button>
+              );
+            })}
           </div>
 
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="secondary" size="sm" onClick={handleExport}>
             <Download className="w-3.5 h-3.5 mr-1.5" />
-            Exportar datos
+            Exportar reporte
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <MetricCard
-          title="Productividad general"
-          value="94.2%"
-          trend="+3.1% vs. periodo previo"
-          trendType="positive"
-          icon={TrendingUp}
-        />
-        <MetricCard
-          title="Proyectos completados"
-          value={completedProjects || 5}
-          trend="+2 este mes"
-          trendType="positive"
-          icon={CheckCircle2}
-        />
-        <MetricCard
-          title="Tareas completadas"
-          value={completedTasks || 42}
-          trend="+18% velocidad de sprint"
-          trendType="positive"
-          icon={CheckCircle2}
-        />
-        <MetricCard
-          title="Tareas vencidas"
-          value={6}
-          trend="Atención en 2 proyectos"
-          trendType="warning"
-          icon={AlertTriangle}
-        />
+      {/* High-level KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+          <span className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
+            Eficiencia operativa
+          </span>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-editorial text-4xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+              94.2%
+            </span>
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[#0c0a09] bg-[#a7e5d3]/35 px-2 py-0.5 rounded-full">
+              <TrendingUp className="w-3 h-3" /> +2.1%
+            </span>
+          </div>
+          <p className="text-xs text-[#777169] mt-3 pt-3 border-t border-[#e7e5e4]/60">
+            Cumplimiento de plazos previstos
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+          <span className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
+            Velocidad de entrega
+          </span>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-editorial text-4xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+              3.8 días
+            </span>
+            <span className="text-xs text-[#777169]">promedio por tarea</span>
+          </div>
+          <p className="text-xs text-[#777169] mt-3 pt-3 border-t border-[#e7e5e4]/60">
+            -0.4 días comparado al trimestre previo
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+          <span className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
+            Tareas cerradas
+          </span>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-editorial text-4xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+              {completedTasks}
+            </span>
+            <span className="text-xs text-[#777169]">de {totalTasks} totales</span>
+          </div>
+          <p className="text-xs text-[#777169] mt-3 pt-3 border-t border-[#e7e5e4]/60">
+            Tasa de resolución del {Math.round((completedTasks / totalTasks) * 100)}%
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+          <span className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
+            Cuellos de botella
+          </span>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-editorial text-4xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
+              {inReviewTasks}
+            </span>
+            <span className="text-xs text-[#777169]">tareas en revisión</span>
+          </div>
+          <p className="text-xs text-[#777169] mt-3 pt-3 border-t border-[#e7e5e4]/60">
+            Sin bloqueos críticos detectados
+          </p>
+        </div>
       </div>
 
-      {/* Visual Analytics Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Project Status Distribution */}
-        <div className="lg:col-span-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Distribución de proyectos por estado
+      {/* Visual Distributions using exact palette */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Task Status Breakdown */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
+            <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
+              Distribución de tareas por estado
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Estado general de la cartera de iniciativas ({projects.length} totales)
-            </p>
+            <span className="text-xs text-[#777169]">Total: {totalTasks}</span>
           </div>
 
-          {/* Horizontal multi-segment bar */}
-          <div className="space-y-2">
-            <div className="h-4 w-full rounded-full bg-slate-100 dark:bg-slate-800 flex overflow-hidden">
-              {statusBreakdown.map((item) => {
-                const percentage = Math.max(
-                  Math.round((item.count / Math.max(projects.length, 1)) * 100),
-                  8
-                );
-                return (
-                  <div
-                    key={item.label}
-                    className={cn('h-full transition-all duration-500', item.color)}
-                    style={{ width: `${percentage}%` }}
-                    title={`${item.label}: ${item.count} (${percentage}%)`}
-                  />
-                );
-              })}
+          <div className="space-y-3 pt-2">
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-[#4e4e4e] dark:text-[#d6d3d1]">Completadas</span>
+                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                  {completedTasks} ({Math.round((completedTasks / totalTasks) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
+                <div
+                  className="h-full bg-[#a7e5d3] rounded-full"
+                  style={{ width: `${(completedTasks / totalTasks) * 100}%` }}
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-4">
-              {statusBreakdown.map((item) => (
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-[#4e4e4e] dark:text-[#d6d3d1]">En progreso</span>
+                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                  {inProgressTasks} ({Math.round((inProgressTasks / totalTasks) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
                 <div
-                  key={item.label}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={cn('w-2.5 h-2.5 rounded-full', item.color)} />
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
-                      {item.label}
-                    </span>
-                  </div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
+                  className="h-full bg-[#a8c8e8] rounded-full"
+                  style={{ width: `${(inProgressTasks / totalTasks) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-[#4e4e4e] dark:text-[#d6d3d1]">En revisión</span>
+                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                  {inReviewTasks} ({Math.round((inReviewTasks / totalTasks) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
+                <div
+                  className="h-full bg-[#c8b8e0] rounded-full"
+                  style={{ width: `${(inReviewTasks / totalTasks) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-[#4e4e4e] dark:text-[#d6d3d1]">Pendientes</span>
+                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
+                  {pendingTasks} ({Math.round((pendingTasks / totalTasks) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
+                <div
+                  className="h-full bg-[#f4c5a8] rounded-full"
+                  style={{ width: `${(pendingTasks / totalTasks) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Task Completion Efficiency */}
-        <div className="lg:col-span-6 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Cumplimiento y resolución de tareas
+        {/* Project Health Breakdown */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
+            <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
+              Cumplimiento de proyectos activos
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Comparativa entre tareas resueltas vs. pendientes de entrega
-            </p>
+            <span className="text-xs text-[#777169]">{projects.length} iniciativas</span>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                <span className="text-emerald-600 dark:text-emerald-400">
-                  Tareas completadas a tiempo ({completedTasks})
-                </span>
-                <span className="text-slate-900 dark:text-slate-100">
-                  {Math.round((completedTasks / Math.max(tasks.length, 1)) * 100)}%
-                </span>
+          <div className="space-y-3.5 pt-2">
+            {projects.slice(0, 4).map((p) => (
+              <div key={p.id} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5] truncate max-w-[240px]">
+                    {p.name}
+                  </span>
+                  <span className="text-[#777169] dark:text-[#a8a29e]">{p.progress}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
+                  <div
+                    className="h-full bg-[#292524] dark:bg-[#f5f5f5] rounded-full"
+                    style={{ width: `${p.progress}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full"
-                  style={{
-                    width: `${(completedTasks / Math.max(tasks.length, 1)) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                <span className="text-blue-600 dark:text-blue-400">
-                  Tareas en progreso / revisión ({pendingTasks})
-                </span>
-                <span className="text-slate-900 dark:text-slate-100">
-                  {Math.round((pendingTasks / Math.max(tasks.length, 1)) * 100)}%
-                </span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full"
-                  style={{
-                    width: `${(pendingTasks / Math.max(tasks.length, 1)) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                <span className="text-amber-600 dark:text-amber-400">
-                  Tareas que requieren atención prioritaria (6)
-                </span>
-                <span className="text-slate-900 dark:text-slate-100">7%</span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: '7%' }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

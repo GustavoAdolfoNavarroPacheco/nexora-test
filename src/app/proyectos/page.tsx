@@ -9,7 +9,6 @@ import { ProjectTable } from '@/components/projects/project-table';
 import { EditProjectModal } from '@/components/projects/edit-project-modal';
 import { ProjectFiltersState, Project } from '@/lib/types';
 import { Plus, FolderKanban, RotateCcw, AlertTriangle } from 'lucide-react';
-
 import { normalizeText } from '@/lib/utils';
 
 export default function ProjectsPage() {
@@ -26,7 +25,6 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isErrorSimulated, setIsErrorSimulated] = useState(false);
 
-  // Load view mode preference from localStorage
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem('nexora_project_view_mode') as 'grid' | 'table' | null;
@@ -41,9 +39,7 @@ export default function ProjectsPage() {
     } catch {}
   };
 
-  // Filter projects
   const filteredProjects = projects.filter((project) => {
-    // Search
     if (filters.search) {
       const q = normalizeText(filters.search);
       const matchesName = normalizeText(project.name).includes(q);
@@ -51,17 +47,14 @@ export default function ProjectsPage() {
       if (!matchesName && !matchesArea) return false;
     }
 
-    // Status
     if (filters.status && project.status !== filters.status) {
       return false;
     }
 
-    // Priority
     if (filters.priority && project.priority !== filters.priority) {
       return false;
     }
 
-    // Manager
     if (filters.managerId && project.manager.id !== filters.managerId) {
       return false;
     }
@@ -70,20 +63,20 @@ export default function ProjectsPage() {
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="flex items-center gap-3">
+            <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
               Proyectos
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-              {projects.length} totales
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f0efed] text-[#777169] dark:bg-[#292524] dark:text-[#a8a29e]">
+              {projects.length}
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Administra y supervisa todos los proyectos e iniciativas estratégicas del equipo.
+          <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
+            Supervisión integral de iniciativas estratégicas y estado de entrega.
           </p>
         </div>
 
@@ -92,7 +85,6 @@ export default function ProjectsPage() {
             variant="primary"
             size="md"
             onClick={() => setIsCreateProjectOpen(true)}
-            className="shadow-sm"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Nuevo proyecto
@@ -100,18 +92,18 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Error state simulation banner if triggered */}
+      {/* Simulated error banner */}
       {isErrorSimulated ? (
-        <div className="p-8 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 text-center space-y-3">
-          <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400 mx-auto" />
-          <h3 className="text-base font-bold text-red-900 dark:text-red-200">
+        <div className="p-8 rounded-2xl bg-[#e8b8c4]/20 border border-[#e8b8c4]/50 text-center space-y-3">
+          <AlertTriangle className="w-8 h-8 text-[#0c0a09] mx-auto" />
+          <h3 className="text-base font-semibold text-[#0c0a09]">
             No pudimos cargar los proyectos en este momento
           </h3>
-          <p className="text-xs text-red-600 dark:text-red-400 max-w-md mx-auto">
-            Ocurrió un error inesperado al conectar con el servicio. Verifica tu conexión de red o vuelve a intentar.
+          <p className="text-xs text-[#4e4e4e] max-w-md mx-auto">
+            Ocurrió un error inesperado al conectar con el servicio. Vuelve a intentar.
           </p>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => setIsErrorSimulated(false)}
             className="mt-2"
@@ -132,24 +124,23 @@ export default function ProjectsPage() {
             totalResults={filteredProjects.length}
           />
 
-          {/* Projects Content: Grid vs Table vs Empty State */}
+          {/* Content */}
           {filteredProjects.length === 0 ? (
-            /* Empty state (requirement 37) */
-            <div className="p-12 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-                <FolderKanban className="w-7 h-7" />
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-4">
+              <div className="w-12 h-12 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] flex items-center justify-center mx-auto">
+                <FolderKanban className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                <h3 className="text-base font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
                   No se encontraron proyectos
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e] max-w-sm mx-auto">
                   Ningún proyecto coincide con los criterios de búsqueda o filtros seleccionados.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() =>
                     setFilters({ search: '', status: '', priority: '', managerId: '' })
@@ -168,7 +159,7 @@ export default function ProjectsPage() {
               </div>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
@@ -186,7 +177,7 @@ export default function ProjectsPage() {
         </>
       )}
 
-      {/* Edit Project Modal */}
+      {/* Edit Modal */}
       <EditProjectModal
         project={editingProject}
         isOpen={Boolean(editingProject)}

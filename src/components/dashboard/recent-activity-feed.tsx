@@ -12,24 +12,23 @@ export function RecentActivityFeed() {
   const latestActivities = activities.slice(0, 5);
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+    <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight">
               Actividad reciente
             </h3>
           </div>
           <Link
             href="/actividad"
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold hover:underline"
+            className="text-xs text-[#292524] hover:text-[#0c0a09] dark:text-[#f5f5f5] font-medium hover:underline"
           >
             Ver timeline
           </Link>
         </div>
 
-        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 mt-2">
+        <div className="divide-y divide-[#e7e5e4]/60 dark:divide-[#2e2a27] mt-1">
           {latestActivities.map((event) => (
             <div key={event.id} className="py-3 flex items-start gap-3 text-xs">
               <Avatar
@@ -40,16 +39,16 @@ export function RecentActivityFeed() {
               />
 
               <div className="flex-1 min-w-0">
-                <p className="text-slate-700 dark:text-slate-300 leading-snug">
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                <p className="text-[#4e4e4e] dark:text-[#d6d3d1] leading-snug">
+                  <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
                     {event.user.name}
                   </span>{' '}
-                  <span className="text-slate-500 dark:text-slate-400">{event.action}</span>{' '}
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="text-[#777169]">{event.action}</span>{' '}
+                  <span className="font-medium text-[#292524] dark:text-white">
                     &ldquo;{event.entity}&rdquo;
                   </span>
                 </p>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block">
+                <span className="text-[11px] text-[#a8a29e] mt-0.5 block">
                   {event.timeAgo}
                 </span>
               </div>
@@ -58,10 +57,10 @@ export function RecentActivityFeed() {
         </div>
       </div>
 
-      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
+      <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27] text-center">
         <Link
           href="/actividad"
-          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium"
+          className="inline-flex items-center gap-1 text-xs text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white font-medium"
         >
           Explorar historial de auditoría
           <ArrowRight className="w-3.5 h-3.5" />

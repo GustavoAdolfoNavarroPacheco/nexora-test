@@ -11,7 +11,6 @@ import {
   Moon,
   Plus,
   ChevronRight,
-  HelpCircle,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/avatar';
@@ -39,7 +38,6 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
 
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
-  // Build breadcrumbs
   const getBreadcrumbs = () => {
     if (pathname === '/') {
       return [{ label: 'Dashboard', href: '/' }];
@@ -49,7 +47,7 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
       const project = projects.find((p) => p.id === projectId);
       return [
         { label: 'Proyectos', href: '/proyectos' },
-        { label: project?.name || 'Detalle del proyecto', href: pathname },
+        { label: project?.name || 'Detalle', href: pathname },
       ];
     }
     if (pathname === '/proyectos') {
@@ -76,29 +74,29 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 sm:px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors select-none">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-6 sm:px-8 bg-[#f5f5f5]/90 dark:bg-[#0c0a09]/90 backdrop-blur-xs border-b border-[#e7e5e4] dark:border-[#2e2a27] transition-colors select-none">
       {/* Left: Mobile Toggle & Breadcrumbs */}
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenMobileMenu}
-          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="md:hidden p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:hover:bg-[#292524]"
           aria-label="Abrir menú"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-4 h-4" />
         </button>
 
-        <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs">
+        <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-2 text-xs">
           {breadcrumbs.map((crumb, i) => (
             <React.Fragment key={crumb.href}>
-              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+              {i > 0 && <ChevronRight className="w-3 h-3 text-[#a8a29e] shrink-0" />}
               {i === breadcrumbs.length - 1 ? (
-                <span className="font-semibold text-slate-900 dark:text-slate-100 max-w-[200px] truncate">
+                <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5] max-w-[240px] truncate">
                   {crumb.label}
                 </span>
               ) : (
                 <Link
                   href={crumb.href}
-                  className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  className="text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white transition-colors"
                 >
                   {crumb.label}
                 </Link>
@@ -109,18 +107,18 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
       </div>
 
       {/* Right: Search, Actions, Notifications & Avatar */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         {/* Search Input Button */}
         <button
           type="button"
           onClick={() => setIsCommandPaletteOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-900 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 transition-all w-36 sm:w-56 justify-between group cursor-pointer"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1c1917] hover:bg-[#fafafa] dark:hover:bg-[#292524] border border-[#e7e5e4] dark:border-[#2e2a27] text-xs text-[#777169] dark:text-[#a8a29e] transition-all w-36 sm:w-56 justify-between group cursor-pointer"
         >
           <div className="flex items-center gap-2 truncate">
-            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition-colors shrink-0" />
-            <span className="truncate">Buscar en Nexora...</span>
+            <Search className="w-3.5 h-3.5 text-[#a8a29e] group-hover:text-[#0c0a09] dark:group-hover:text-white transition-colors shrink-0" />
+            <span className="truncate">Buscar...</span>
           </div>
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono text-[#777169] bg-[#f0efed] dark:bg-[#292524] rounded-full border border-[#e7e5e4] dark:border-[#44403c] shrink-0">
             ⌘K
           </kbd>
         </button>
@@ -130,16 +128,16 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
           size="sm"
           variant="primary"
           onClick={() => setIsCreateProjectOpen(true)}
-          className="hidden sm:inline-flex shadow-xs"
+          className="hidden sm:inline-flex"
         >
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus className="w-3.5 h-3.5 mr-1" />
           Nuevo
         </Button>
 
         {/* Dark Mode Toggle */}
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:text-white dark:hover:bg-[#292524] transition-colors cursor-pointer"
           title={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
           aria-label="Alternar modo oscuro"
         >
@@ -150,12 +148,12 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
         <div className="relative">
           <button
             onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors relative"
+            className="p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:text-white dark:hover:bg-[#292524] transition-colors relative cursor-pointer"
             aria-label="Abrir notificaciones"
           >
             <Bell className="w-4 h-4" />
             {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-slate-950" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#0c0a09] dark:bg-[#a7e5d3] ring-2 ring-[#f5f5f5] dark:ring-[#0c0a09]" />
             )}
           </button>
 
@@ -166,7 +164,7 @@ export function Topbar({ onOpenMobileMenu }: TopbarProps) {
         </div>
 
         {/* User Avatar */}
-        <Link href="/configuracion" className="pl-1">
+        <Link href="/configuracion" className="pl-0.5">
           <Avatar
             src={currentUser.avatar}
             name={currentUser.name}

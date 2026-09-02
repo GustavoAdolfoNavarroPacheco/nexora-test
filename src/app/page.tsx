@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   TrendingUp,
   Plus,
-  Sparkles,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -32,23 +31,19 @@ export default function DashboardPage() {
 
   const pendingTasksCount = tasks.filter((t) => !t.completed).length;
 
-  // Calculate average progress
   const avgProgress = Math.round(
     projects.reduce((acc, curr) => acc + curr.progress, 0) / Math.max(projects.length, 1)
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Dashboard Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Editorial Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Buenos días, {currentUser.name.split(' ')[0]}
-            </h1>
-            <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 capitalize">
+          <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
+            Buenos días, {currentUser.name.split(' ')[0]}
+          </h1>
+          <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1 capitalize">
             {formatFullDate()} — Esto es lo que está pasando con tus proyectos.
           </p>
         </div>
@@ -58,7 +53,6 @@ export default function DashboardPage() {
             variant="primary"
             size="md"
             onClick={() => setIsCreateProjectOpen(true)}
-            className="shadow-sm"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Nuevo proyecto
@@ -66,8 +60,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Metrics Row: 4 Columns (Desktop) -> 2 Columns (Tablet) -> 1 Column (Mobile) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* Metrics Row: 4 Columns -> 2 Columns -> 1 Column */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <MetricCard
           title="Proyectos activos"
           value={activeProjectsCount || 24}
@@ -104,12 +98,12 @@ export default function DashboardPage() {
 
       {/* Main Charts & Overview Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Project Progress Chart: spans 7 cols on large screens */}
+        {/* Progress Chart */}
         <div className="lg:col-span-7">
           <ProgressChart />
         </div>
 
-        {/* Active Projects List: spans 5 cols on large screens */}
+        {/* Active Projects List */}
         <div className="lg:col-span-5">
           <ActiveProjectsList />
         </div>

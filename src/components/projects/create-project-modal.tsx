@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Priority, ProjectStatus } from '@/lib/types';
-import { Calendar, UserCheck, AlertCircle } from 'lucide-react';
+import { Calendar, UserCheck } from 'lucide-react';
 
 export function CreateProjectModal() {
   const {
@@ -142,7 +142,7 @@ export function CreateProjectModal() {
 
         {/* Description */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <label className="block text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
             Descripción del proyecto
           </label>
           <textarea
@@ -150,7 +150,7 @@ export function CreateProjectModal() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Objetivo principal, alcance y consideraciones clave..."
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:border-transparent text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs"
+            className="w-full px-4 py-3 text-sm bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#292524] text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e]"
           />
         </div>
 
@@ -227,7 +227,7 @@ export function CreateProjectModal() {
 
         {/* Team Multi-select */}
         <div className="space-y-1.5 pt-1">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <label className="block text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
             Asignar integrantes del equipo
           </label>
           <div className="flex flex-wrap gap-2 pt-1">
@@ -238,15 +238,15 @@ export function CreateProjectModal() {
                   type="button"
                   key={u.id}
                   onClick={() => toggleTeamMember(u.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-[#292524] border-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09]'
+                      : 'bg-[#fafafa] dark:bg-[#292524] border-[#e7e5e4] dark:border-[#44403c] text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#f0efed]'
                   }`}
                 >
                   <UserCheck
                     className={`w-3.5 h-3.5 ${
-                      isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                      isSelected ? 'text-white dark:text-[#0c0a09]' : 'text-[#a8a29e]'
                     }`}
                   />
                   <span>{u.name}</span>
@@ -257,10 +257,10 @@ export function CreateProjectModal() {
         </div>
 
         {/* Actions Footer */}
-        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-2.5 pt-5 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               setIsCreateProjectOpen(false);
               resetForm();

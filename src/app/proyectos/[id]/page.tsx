@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { KanbanBoard } from '@/components/projects/kanban-board';
 import { ProjectMilestones } from '@/components/projects/project-milestones';
 import { EditProjectModal } from '@/components/projects/edit-project-modal';
@@ -20,18 +19,13 @@ import {
 import {
   ArrowLeft,
   Calendar,
-  CheckSquare,
   Clock,
   Edit2,
   Plus,
-  Users,
   LayoutList,
   Kanban,
-  CheckCircle2,
-  AlertTriangle,
+  Check,
   FolderKanban,
-  Activity,
-  ListTodo,
 } from 'lucide-react';
 
 interface ProjectDetailPageProps {
@@ -60,11 +54,11 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   if (!project) {
     return (
       <div className="py-20 text-center space-y-4">
-        <FolderKanban className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+        <FolderKanban className="w-12 h-12 text-[#a8a29e] mx-auto" />
+        <h2 className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
           Proyecto no encontrado
         </h2>
-        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+        <p className="text-sm text-[#777169] max-w-sm mx-auto">
           El proyecto solicitado no existe o fue archivado/eliminado.
         </p>
         <Link href="/proyectos">
@@ -77,7 +71,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const priorityMeta = getPriorityMeta(project.priority);
   const statusMeta = getProjectStatusMeta(project.status);
 
-  // Tasks for this project
   const projectTasks = tasks.filter((t) => t.projectId === project.id);
   const completedTasks = projectTasks.filter((t) => t.completed);
   const pendingTasks = projectTasks.filter((t) => !t.completed);
@@ -89,62 +82,61 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     taskSearch ? t.title.toLowerCase().includes(taskSearch.toLowerCase()) : true
   );
 
-  // Project activities
   const projectActivities = activities.filter(
     (a) => a.projectId === project.id || a.entity === project.name
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-200">
       {/* Back Link */}
       <div>
         <Link
           href="/proyectos"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Volver al listado de proyectos
+          Volver a proyectos
         </Link>
       </div>
 
       {/* Project Header Banner Card */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-2">
+      <div className="p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none space-y-6">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
+          <div className="space-y-3">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-medium px-3 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]">
                 {project.clientOrArea}
               </span>
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusMeta.bg}`}
+                className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium border ${statusMeta.bg}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />
                 {statusMeta.label}
               </span>
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${priorityMeta.bg}`}
+                className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium border ${priorityMeta.bg}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${priorityMeta.dot}`} />
                 {priorityMeta.label}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <h1 className="font-editorial text-3xl sm:text-4xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
               {project.name}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-sm text-[#777169] dark:text-[#a8a29e] max-w-2xl leading-relaxed">
               {project.description}
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
             >
               <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-              Editar proyecto
+              Editar
             </Button>
             <Button
               variant="primary"
@@ -158,36 +150,36 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         </div>
 
         {/* Sub-meta Info Strip */}
-        <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-6 pt-5 border-t border-[#e7e5e4] dark:border-[#2e2a27] text-xs text-[#777169] dark:text-[#a8a29e]">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400">Responsable:</span>
+            <span className="text-[#a8a29e]">Responsable:</span>
             <Avatar
               src={project.manager.avatar}
               name={project.manager.name}
               size="xs"
             />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
               {project.manager.name}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <Calendar className="w-3.5 h-3.5 text-[#a8a29e]" />
             <span>Inicio: {formatDate(project.startDate)}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <Clock className="w-3.5 h-3.5 text-[#a8a29e]" />
             <span>Fecha límite: {formatDate(project.dueDate)}</span>
           </div>
 
           <div className="flex-1 min-w-[200px] flex items-center gap-3 ml-auto">
-            <span className="text-xs font-semibold whitespace-nowrap">
+            <span className="text-xs font-medium whitespace-nowrap text-[#0c0a09] dark:text-[#f5f5f5]">
               {project.progress}% completado
             </span>
-            <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className="flex-1 h-1 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
               <div
-                className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                className="h-full bg-[#292524] dark:bg-[#f5f5f5] rounded-full transition-all duration-500"
                 style={{ width: `${project.progress}%` }}
               />
             </div>
@@ -196,8 +188,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 overflow-x-auto">
-        <nav className="flex items-center gap-2">
+      <div className="border-b border-[#e7e5e4] dark:border-[#2e2a27] flex items-center justify-between gap-4 overflow-x-auto">
+        <nav className="flex items-center gap-4">
           {(
             [
               { id: 'resumen', label: 'Resumen' },
@@ -210,10 +202,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all select-none whitespace-nowrap',
+                'py-3 text-sm font-medium border-b-2 transition-all select-none whitespace-nowrap cursor-pointer',
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'border-[#0c0a09] text-[#0c0a09] dark:border-[#f5f5f5] dark:text-[#f5f5f5]'
+                  : 'border-transparent text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e]'
               )}
             >
               {tab.label}
@@ -223,14 +215,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
         {activeTab === 'tareas' && (
           <div className="flex items-center gap-2 py-1">
-            <div className="flex items-center p-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524]">
               <button
                 onClick={() => setTaskViewMode('kanban')}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-colors',
+                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer',
                   taskViewMode === 'kanban'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400'
+                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                    : 'text-[#777169]'
                 )}
               >
                 <Kanban className="w-3.5 h-3.5" />
@@ -239,10 +231,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <button
                 onClick={() => setTaskViewMode('list')}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-colors',
+                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer',
                   taskViewMode === 'list'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400'
+                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
+                    : 'text-[#777169]'
                 )}
               >
                 <LayoutList className="w-3.5 h-3.5" />
@@ -258,58 +250,58 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         <div className="space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <span className="text-xs text-slate-400 font-semibold uppercase">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
                 Tareas completadas
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
                   {completedTasks.length}
                 </span>
-                <span className="text-xs text-emerald-600">
+                <span className="text-xs text-[#777169]">
                   de {projectTasks.length} totales
                 </span>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <span className="text-xs text-slate-400 font-semibold uppercase">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
                 Tareas pendientes
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
                   {pendingTasks.length}
                 </span>
-                <span className="text-xs text-blue-600">en desarrollo</span>
+                <span className="text-xs text-[#777169]">en curso</span>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <span className="text-xs text-slate-400 font-semibold uppercase">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
                 Tareas vencidas
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
                   {overdueTasks.length}
                 </span>
-                <span className="text-xs text-amber-600">atención requerida</span>
+                <span className="text-xs text-[#777169]">atención</span>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <span className="text-xs text-slate-400 font-semibold uppercase">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
+              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
                 Miembros asignados
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
                   {project.team.length}
                 </span>
-                <span className="text-xs text-slate-400">colaboradores</span>
+                <span className="text-xs text-[#777169]">personas</span>
               </div>
             </div>
           </div>
 
-          {/* Strategic Milestones & Team preview */}
+          {/* Milestones & Team Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8">
               <ProjectMilestones
@@ -318,9 +310,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               />
             </div>
 
-            <div className="lg:col-span-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight pb-2 border-b border-slate-100 dark:border-slate-800">
-                Equipo del proyecto
+            <div className="lg:col-span-4 p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-4">
+              <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
+                Equipo asignado
               </h3>
 
               <div className="space-y-3">
@@ -334,14 +326,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                         status={member.status}
                       />
                       <div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        <p className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
                           {member.name}
                         </p>
-                        <p className="text-[10px] text-slate-400">{member.role}</p>
+                        <p className="text-[11px] text-[#777169] dark:text-[#a8a29e]">{member.role}</p>
                       </div>
                     </div>
 
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169]">
                       {projectTasks.filter((t) => t.assignee.id === member.id).length} tareas
                     </span>
                   </div>
@@ -352,17 +344,16 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         </div>
       )}
 
-      {/* Tab 2: Tareas (Kanban o Lista) */}
+      {/* Tab 2: Tareas */}
       {activeTab === 'tareas' && (
-        <div className="space-y-4">
-          {/* Quick search inside tasks */}
+        <div className="space-y-5">
           <div className="flex items-center justify-between gap-3">
             <input
               type="text"
               value={taskSearch}
               onChange={(e) => setTaskSearch(e.target.value)}
               placeholder="Buscar en tareas del proyecto..."
-              className="max-w-xs w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="max-w-xs w-full h-10 px-4 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-lg text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e] focus:outline-none focus:ring-1 focus:ring-[#292524]"
             />
 
             <Button
@@ -378,9 +369,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           {taskViewMode === 'kanban' ? (
             <KanbanBoard tasks={filteredProjectTasks} projectId={project.id} />
           ) : (
-            <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] divide-y divide-[#e7e5e4] dark:divide-[#2e2a27] overflow-hidden">
               {filteredProjectTasks.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">
+                <div className="p-8 text-center text-xs text-[#a8a29e]">
                   No hay tareas registradas con los filtros actuales.
                 </div>
               ) : (
@@ -391,17 +382,19 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                   return (
                     <div
                       key={task.id}
-                      className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                      className="p-4 flex items-center justify-between gap-4 hover:bg-[#fafafa] dark:hover:bg-[#292524]/30 transition-colors"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
                         <button
                           onClick={() => toggleTaskComplete(task.id)}
-                          className="shrink-0"
+                          className="shrink-0 cursor-pointer"
                         >
                           {task.completed ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-50 dark:fill-emerald-950" />
+                            <div className="w-4 h-4 rounded bg-[#0c0a09] dark:bg-[#f5f5f5] text-white dark:text-[#0c0a09] flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5" />
+                            </div>
                           ) : (
-                            <div className="w-4 h-4 rounded border-2 border-slate-300 dark:border-slate-600" />
+                            <div className="w-4 h-4 rounded border border-[#d6d3d1] hover:border-[#0c0a09] dark:border-[#44403c] transition-colors" />
                           )}
                         </button>
 
@@ -411,13 +404,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                         >
                           <h4
                             className={cn(
-                              'text-xs font-semibold truncate',
-                              task.completed && 'line-through text-slate-400'
+                              'text-xs font-medium truncate group-hover:underline',
+                              task.completed && 'line-through text-[#a8a29e]'
                             )}
                           >
                             {task.title}
                           </h4>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-[#a8a29e]">
                             Entrega: {formatDate(task.dueDate)}
                           </span>
                         </div>
@@ -425,13 +418,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${sMeta.bg}`}
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border ${sMeta.bg}`}
                         >
                           {sMeta.label}
                         </span>
 
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${pMeta.bg}`}
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border ${pMeta.bg}`}
                         >
                           {pMeta.label}
                         </span>
@@ -453,14 +446,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
       {/* Tab 3: Actividad */}
       {activeTab === 'actividad' && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-5">
+          <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
             Registro cronológico del proyecto
           </h3>
 
           <div className="space-y-4">
             {projectActivities.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">
+              <p className="text-xs text-[#a8a29e] italic">
                 Aún no hay registros de actividad específicos para este proyecto.
               </p>
             ) : (
@@ -468,14 +461,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <div key={act.id} className="flex items-start gap-3 text-xs">
                   <Avatar src={act.user.avatar} name={act.user.name} size="xs" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-slate-700 dark:text-slate-300">
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    <p className="text-[#4e4e4e] dark:text-[#d6d3d1]">
+                      <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
                         {act.user.name}
                       </span>{' '}
                       {act.action}{' '}
-                      <span className="font-semibold">&ldquo;{act.entity}&rdquo;</span>
+                      <span className="font-medium">&ldquo;{act.entity}&rdquo;</span>
                     </p>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    <span className="text-[11px] text-[#a8a29e] mt-0.5 block">
                       {act.timeAgo}
                     </span>
                   </div>
@@ -488,11 +481,11 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
       {/* Tab 4: Equipo */}
       {activeTab === 'equipo' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {project.team.map((member) => (
             <div
               key={member.id}
-              className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3"
+              className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-4"
             >
               <div className="flex items-start justify-between">
                 <Avatar
@@ -501,22 +494,22 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                   size="md"
                   status={member.status}
                 />
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-medium capitalize bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]">
                   {member.status}
                 </span>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <h4 className="text-sm font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
                   {member.name}
                 </h4>
-                <p className="text-xs text-slate-400">{member.role}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{member.department}</p>
+                <p className="text-xs text-[#777169] dark:text-[#a8a29e]">{member.role}</p>
+                <p className="text-[11px] text-[#a8a29e] mt-0.5">{member.department}</p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs flex justify-between text-slate-500">
-                <span>Tareas asignadas en proyecto:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
+              <div className="pt-3 border-t border-[#e7e5e4] dark:border-[#2e2a27] text-xs flex justify-between text-[#777169]">
+                <span>Tareas asignadas:</span>
+                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
                   {projectTasks.filter((t) => t.assignee.id === member.id).length}
                 </span>
               </div>
@@ -525,7 +518,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         </div>
       )}
 
-      {/* Edit Project Modal */}
+      {/* Edit Modal */}
       <EditProjectModal
         project={project}
         isOpen={isEditModalOpen}
