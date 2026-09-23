@@ -1,27 +1,33 @@
-import type { Metadata } from 'next';
-import { Inter, Newsreader } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Poppins } from 'next/font/google';
 import './globals.css';
 import { AppShell } from '@/components/layout/app-shell';
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-poppins',
   display: 'swap',
-});
-
-const newsreader = Newsreader({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  weight: ['300', '400', '500'],
-  variable: '--font-serif',
-  display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
-  title: 'Nexora — Plataforma de Gestión de Proyectos y Equipos',
+  title: 'Nexora — Proyectos y equipos',
   description:
-    'Centro de control para la gestión de proyectos, tareas, responsables y métricas operativas de alto rendimiento.',
+    'Sigue el avance de cada proyecto, reparte el trabajo del equipo y detecta a tiempo lo que se está retrasando.',
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f5f7' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
+};
+
+// Applies the saved theme before first paint so dark-mode users never see a white flash.
+const themeScript = `(function(){try{var t=localStorage.getItem('nexora_saas_theme');var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -29,8 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${inter.variable} ${newsreader.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans bg-[#f5f5f5] text-[#292524] selection:bg-[#f0efed] selection:text-[#0c0a09]">
+    <html lang="es" className={`${poppins.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-full font-sans antialiased">
         <AppShell>{children}</AppShell>
       </body>
     </html>

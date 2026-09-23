@@ -1,18 +1,58 @@
 'use client';
 
 import React from 'react';
-import { Search, LayoutGrid, Table, X } from 'lucide-react';
-import { ProjectFiltersState, User } from '@/lib/types';
+import { motion } from 'motion/react';
+import { Search, X, LayoutGrid, Rows3 } from 'lucide-react';
+import { Project, ProjectFiltersState, User } from '@/lib/types';
+import { Segmented } from '@/components/ui/segmented';
+import { PillSelect } from '@/components/ui/input';
+import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
-interface ProjectFiltersProps {
-  filters: ProjectFiltersState;
-  onFilterChange: (filters: ProjectFiltersState) => void;
-  viewMode: 'grid' | 'table';
-  onViewModeChange: (mode: 'grid' | 'table') => void;
-  users: User[];
-  totalResults: number;
+/** iOS search field: filled capsule, clear button appears once there is text. */
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('relative flex items-center', className)}>
+      <Search className="pointer-events-none absolute left-3 h-4 w-4 text-ink-3" strokeWidth={2.2} />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="h-10 w-full rounded-[12px] bg-fill-2 pr-9 pl-9 text-[14px] text-ink outline-none transition-shadow duration-200 placeholder:text-ink-3 focus:shadow-[0_0_0_4px_var(--accent-soft)] [&::-webkit-search-cancel-button]:hidden"
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          aria-label="Borrar búsqueda"
+          className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink-3 text-canvas"
+        >
+          <X className="h-3 w-3" strokeWidth={3} />
+        </button>
+      )}
+    </div>
+  );
 }
+
+const statusChips: { value: string; label: string }[] = [
+  { value: '', label: 'Todos' },
+  { value: 'activo', label: 'Activos' },
+  { value: 'planificacion', label: 'Planificación' },
+  { value: 'en_pausa', label: 'En pausa' },
+  { value: 'completado', label: 'Completados' },
+  { value: 'archivado', label: 'Archivados' },
+];
 
 export function ProjectFilters({
   filters,
@@ -20,152 +60,75 @@ export function ProjectFilters({
   viewMode,
   onViewModeChange,
   users,
-  totalResults,
-}: ProjectFiltersProps) {
-  const statusOptions = [
-    { value: '', label: 'Todos los estados' },
-    { value: 'activo', label: 'Activo' },
-    { value: 'en_pausa', label: 'En pausa' },
-    { value: 'planificacion', label: 'Planificación' },
-    { value: 'completado', label: 'Completado' },
-    { value: 'archivado', label: 'Archivado' },
-  ];
-
-  const priorityOptions = [
-    { value: '', label: 'Todas las prioridades' },
-    { value: 'baja', label: 'Baja' },
-    { value: 'media', label: 'Media' },
-    { value: 'alta', label: 'Alta' },
-    { value: 'critica', label: 'Crítica' },
-  ];
-
-  const hasActiveFilters =
-    Boolean(filters.search) ||
-    Boolean(filters.status) ||
-    Boolean(filters.priority) ||
-    Boolean(filters.managerId);
-
-  const clearFilters = () => {
-    onFilterChange({
-      search: '',
-      status: '',
-      priority: '',
-      managerId: '',
-    });
-  };
+  projects,
+}: {
+  filters: ProjectFiltersState;
+  onFilterChange: (filters: ProjectFiltersState) => void;
+  viewMode: 'grid' | 'table';
+  onViewModeChange: (mode: 'grid' | 'table') => void;
+  users: User[];
+  projects: Project[];
+}) {
+  const managers = users.filter((u) => projects.some((p) => p.manager.id === u.id));
 
   return (
-    <div className="space-y-4 p-5 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        {/* Search input: 44px height, radius 8px */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a8a29e]" />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
-            placeholder="Buscar por nombre de proyecto o área..."
-            className="w-full h-11 pl-10 pr-4 text-xs sm:text-sm bg-white dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#292524] dark:focus:ring-white text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e]"
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <SearchField
+          value={filters.search}
+          onChange={(search) => onFilterChange({ ...filters, search })}
+          placeholder="Buscar por nombre o área"
+          className="flex-1"
+        />
+        <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <PillSelect label="Prioridad" value={filters.priority} onChange={(priority) => onFilterChange({ ...filters, priority })}>
+            <option value="">Cualquier prioridad</option>
+            <option value="critica">Crítica</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </PillSelect>
+          <PillSelect label="Responsable" value={filters.managerId} onChange={(managerId) => onFilterChange({ ...filters, managerId })}>
+            <option value="">Cualquier responsable</option>
+            {managers.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </PillSelect>
+          <Segmented
+            label="Vista"
+            value={viewMode}
+            onChange={onViewModeChange}
+            options={[
+              { value: 'grid', label: '', icon: LayoutGrid, ariaLabel: 'Tarjetas' },
+              { value: 'table', label: '', icon: Rows3, ariaLabel: 'Lista' },
+            ]}
           />
-          {filters.search && (
-            <button
-              onClick={() => onFilterChange({ ...filters, search: '' })}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#a8a29e] hover:text-[#0c0a09] dark:hover:text-white"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* View Switchers: pill */}
-        <div className="flex items-center gap-2 self-end lg:self-auto">
-          <div className="flex items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524]">
-            <button
-              onClick={() => onViewModeChange('grid')}
-              className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer',
-                viewMode === 'grid'
-                  ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                  : 'text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e]'
-              )}
-              title="Vista de cuadrícula"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tarjetas</span>
-            </button>
-            <button
-              onClick={() => onViewModeChange('table')}
-              className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer',
-                viewMode === 'table'
-                  ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                  : 'text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e]'
-              )}
-              title="Vista de tabla"
-            >
-              <Table className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tabla</span>
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Select Filters Row */}
-      <div className="flex flex-wrap items-center gap-2.5 pt-1">
-        {/* Status */}
-        <select
-          value={filters.status}
-          onChange={(e) => onFilterChange({ ...filters, status: e.target.value })}
-          className="h-9 px-3 text-xs bg-[#fafafa] dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg text-[#292524] dark:text-[#f5f5f5] focus:outline-none focus:ring-1 focus:ring-[#292524] cursor-pointer"
-        >
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Priority */}
-        <select
-          value={filters.priority}
-          onChange={(e) => onFilterChange({ ...filters, priority: e.target.value })}
-          className="h-9 px-3 text-xs bg-[#fafafa] dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg text-[#292524] dark:text-[#f5f5f5] focus:outline-none focus:ring-1 focus:ring-[#292524] cursor-pointer"
-        >
-          {priorityOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Manager */}
-        <select
-          value={filters.managerId}
-          onChange={(e) => onFilterChange({ ...filters, managerId: e.target.value })}
-          className="h-9 px-3 text-xs bg-[#fafafa] dark:bg-[#292524] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg text-[#292524] dark:text-[#f5f5f5] focus:outline-none focus:ring-1 focus:ring-[#292524] cursor-pointer max-w-[180px] truncate"
-        >
-          <option value="">Todos los responsables</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Clear Filters button */}
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="h-9 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-medium text-[#0c0a09] bg-[#f0efed] hover:bg-[#e7e5e4] dark:bg-[#292524] dark:text-white transition-colors ml-auto cursor-pointer"
-          >
-            <X className="w-3 h-3" />
-            Limpiar filtros
-          </button>
-        )}
-
-        <span className="text-xs text-[#777169] dark:text-[#a8a29e] ml-auto">
-          {totalResults} {totalResults === 1 ? 'proyecto' : 'proyectos'}
-        </span>
+      <div role="radiogroup" aria-label="Estado" className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        {statusChips.map((chip) => {
+          const selected = filters.status === chip.value;
+          const count = chip.value ? projects.filter((p) => p.status === chip.value).length : projects.length;
+          return (
+            <button
+              key={chip.value || 'all'}
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onFilterChange({ ...filters, status: chip.value })}
+              className={cn(
+                'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors',
+                selected ? 'text-white' : 'text-ink-2 hover:bg-fill-2 hover:text-ink'
+              )}
+            >
+              {selected && <motion.span layoutId="project-status-chip" transition={spring} className="absolute inset-0 rounded-full bg-ink" />}
+              <span className={cn('relative', selected && 'text-canvas')}>{chip.label}</span>
+              <span className={cn('tabular relative text-[12px]', selected ? 'text-canvas/60' : 'text-ink-3')}>{count}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

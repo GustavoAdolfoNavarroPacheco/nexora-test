@@ -1,279 +1,247 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useStore } from '@/lib/store';
-import { Drawer } from '@/components/ui/drawer';
-import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import {
-  getPriorityMeta,
-  getTaskStatusMeta,
-  formatDate,
-  cn,
-} from '@/lib/utils';
-import {
-  Calendar,
-  Send,
-  MessageSquare,
-  ListTodo,
-  FolderKanban,
-  Check,
-} from 'lucide-react';
-import { TaskStatus, Priority } from '@/lib/types';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
+import { ArrowUp, FolderClosed, Plus } from 'lucide-react';
+import { useStore, createId } from '@/lib/store';
+import { Drawer } from '@/components/ui/sheet';
+import { Avatar } from '@/components/ui/avatar';
+import { Check } from '@/components/ui/check';
+import { Chevrons } from '@/components/ui/input';
+import { ProgressBar } from '@/components/ui/progress-bar';
+import { spring, easeApple } from '@/lib/motion';
+import { cn, describeDue, firstName, formatTime, getTaskStatusMeta, TASK_STATUSES, toneClasses } from '@/lib/utils';
+import { Priority, Task, TaskStatus } from '@/lib/types';
 
-export function TaskDetailDrawer() {
-  const {
-    tasks,
-    selectedTaskId,
-    setSelectedTaskId,
-    updateTask,
-    toggleTaskComplete,
-    toggleSubtask,
-    addCommentToTask,
-  } = useStore();
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-4 px-4 py-2">
+      <span className="text-[14px] text-ink">{label}</span>
+      <div className="flex min-w-0 items-center justify-end">{children}</div>
+    </div>
+  );
+}
 
-  const [commentText, setCommentText] = useState('');
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+function InlineSelect({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
+  return (
+    <span className="relative inline-flex items-center">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none bg-transparent pr-5 text-right text-[14px] text-ink-2 outline-none hover:text-ink"
+      >
+        {children}
+      </select>
+      <Chevrons className="pointer-events-none absolute right-0 h-3 w-2 text-ink-3" />
+    </span>
+  );
+}
 
-  const task = tasks.find((t) => t.id === selectedTaskId);
+function TaskDetail({ task }: { task: Task }) {
+  const { currentUser, setSelectedTaskId, updateTask, toggleTaskComplete, toggleSubtask, addCommentToTask } = useStore();
+  const [comment, setComment] = useState('');
+  const [subtask, setSubtask] = useState('');
 
-  if (!task) return null;
+  const due = describeDue(task.dueDate, task.completed);
+  const subDone = task.subtasks.filter((s) => s.completed).length;
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const addSubtask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
-    addCommentToTask(task.id, commentText);
-    setCommentText('');
+    if (!subtask.trim()) return;
+    updateTask(task.id, { subtasks: [...task.subtasks, { id: createId('sub'), title: subtask.trim(), completed: false }] });
+    setSubtask('');
   };
 
-  const handleAddSubtask = (e: React.FormEvent) => {
+  const send = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSubtaskTitle.trim()) return;
-
-    const newSubtask = {
-      id: `sub-${Date.now()}`,
-      title: newSubtaskTitle.trim(),
-      completed: false,
-    };
-
-    updateTask(task.id, {
-      subtasks: [...task.subtasks, newSubtask],
-    });
-    setNewSubtaskTitle('');
+    if (!comment.trim()) return;
+    addCommentToTask(task.id, comment);
+    setComment('');
   };
 
   return (
-    <Drawer
-      isOpen={!!selectedTaskId}
-      onClose={() => setSelectedTaskId(null)}
-      title="Detalle de la tarea"
-      description={`ID: ${task.id} • Creada recientemente`}
-      maxWidth="xl"
-    >
-      <div className="space-y-6">
-        {/* Header Action: Checkbox & Title */}
-        <div className="flex items-start gap-3.5">
-          <button
-            onClick={() => toggleTaskComplete(task.id)}
-            className="mt-1 p-0.5 rounded cursor-pointer"
-            title={task.completed ? 'Marcar como pendiente' : 'Marcar como completada'}
+    <div className="space-y-7 pt-1">
+      <div className="flex items-start gap-3.5">
+        <Check
+          checked={task.completed}
+          onChange={() => toggleTaskComplete(task.id)}
+          label={task.completed ? 'Reabrir tarea' : 'Completar tarea'}
+          size={28}
+          className="mt-0.5"
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className={cn('text-title-2 transition-colors', task.completed ? 'text-ink-3 line-through' : 'text-ink')}>{task.title}</h3>
+          <Link
+            href={`/proyectos/${task.projectId}`}
+            onClick={() => setSelectedTaskId(null)}
+            className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-ink hover:underline"
           >
-            {task.completed ? (
-              <div className="w-5 h-5 rounded bg-[#0c0a09] dark:bg-[#f5f5f5] text-white dark:text-[#0c0a09] flex items-center justify-center">
-                <Check className="w-3 h-3" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded border border-[#d6d3d1] hover:border-[#0c0a09] dark:border-[#44403c] transition-colors" />
-            )}
-          </button>
-
-          <div className="flex-1">
-            <h2
-              className={cn(
-                'font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] leading-snug',
-                task.completed && 'line-through text-[#a8a29e]'
-              )}
-            >
-              {task.title}
-            </h2>
-            <Link
-              href={`/proyectos/${task.projectId}`}
-              onClick={() => setSelectedTaskId(null)}
-              className="inline-flex items-center gap-1.5 mt-1.5 text-xs text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white font-medium hover:underline"
-            >
-              <FolderKanban className="w-3.5 h-3.5" />
-              {task.projectName}
-            </Link>
-          </div>
-        </div>
-
-        {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/50 border border-[#e7e5e4] dark:border-[#44403c] text-xs">
-          <div>
-            <span className="text-[#a8a29e] block mb-1">Estado</span>
-            <select
-              value={task.status}
-              onChange={(e) =>
-                updateTask(task.id, { status: e.target.value as TaskStatus })
-              }
-              className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] font-medium text-[#0c0a09] dark:text-[#f5f5f5] focus:outline-none cursor-pointer"
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="en_progreso">En progreso</option>
-              <option value="en_revision">En revisión</option>
-              <option value="completada">Completada</option>
-            </select>
-          </div>
-
-          <div>
-            <span className="text-[#a8a29e] block mb-1">Prioridad</span>
-            <select
-              value={task.priority}
-              onChange={(e) =>
-                updateTask(task.id, { priority: e.target.value as Priority })
-              }
-              className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] font-medium text-[#0c0a09] dark:text-[#f5f5f5] focus:outline-none cursor-pointer"
-            >
-              <option value="baja">Baja</option>
-              <option value="media">Media</option>
-              <option value="alta">Alta</option>
-              <option value="critica">Crítica</option>
-            </select>
-          </div>
-
-          <div>
-            <span className="text-[#a8a29e] block mb-1">Responsable</span>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Avatar src={task.assignee.avatar} name={task.assignee.name} size="xs" />
-              <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
-                {task.assignee.name}
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-[#a8a29e] block mb-1">Fecha límite</span>
-            <div className="flex items-center gap-1.5 mt-1 font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
-              <Calendar className="w-3.5 h-3.5 text-[#a8a29e]" />
-              <span>{formatDate(task.dueDate)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e]">
-            Descripción
-          </h4>
-          <p className="text-sm text-[#4e4e4e] dark:text-[#d6d3d1] leading-relaxed whitespace-pre-line p-4 rounded-xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
-            {task.description || 'Sin descripción detallada.'}
-          </p>
-        </div>
-
-        {/* Subtasks Checklist */}
-        <div className="space-y-3">
-          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e] flex items-center gap-1.5">
-            <ListTodo className="w-4 h-4 text-[#777169]" />
-            Checklist (
-            {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length})
-          </h4>
-
-          <div className="space-y-2">
-            {task.subtasks.map((st) => (
-              <div
-                key={st.id}
-                onClick={() => toggleSubtask(task.id, st.id)}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#fafafa] dark:hover:bg-[#292524] cursor-pointer border border-transparent hover:border-[#e7e5e4] dark:hover:border-[#44403c] transition-colors"
-              >
-                <div className="w-4 h-4 rounded border border-[#d6d3d1] flex items-center justify-center shrink-0">
-                  {st.completed && <Check className="w-3 h-3 text-[#0c0a09] dark:text-white" />}
-                </div>
-                <span
-                  className={cn(
-                    'text-xs text-[#292524] dark:text-[#f5f5f5] select-none',
-                    st.completed && 'line-through text-[#a8a29e]'
-                  )}
-                >
-                  {st.title}
-                </span>
-              </div>
-            ))}
-
-            <form onSubmit={handleAddSubtask} className="flex gap-2 pt-1">
-              <input
-                type="text"
-                value={newSubtaskTitle}
-                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                placeholder="+ Añadir elemento a la checklist..."
-                className="flex-1 h-10 px-3.5 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#292524] text-[#292524] dark:text-[#f5f5f5]"
-              />
-              <Button type="submit" size="sm" variant="secondary">
-                Agregar
-              </Button>
-            </form>
-          </div>
-        </div>
-
-        {/* Comments Stream */}
-        <div className="space-y-4 pt-3 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
-          <h4 className="text-[12px] font-medium uppercase tracking-wider text-[#777169] dark:text-[#a8a29e] flex items-center gap-1.5">
-            <MessageSquare className="w-4 h-4 text-[#777169]" />
-            Comentarios ({task.comments.length})
-          </h4>
-
-          <div className="space-y-3">
-            {task.comments.length === 0 ? (
-              <p className="text-xs text-[#a8a29e] italic">
-                Aún no hay comentarios en esta tarea. Sé el primero en escribir uno.
-              </p>
-            ) : (
-              task.comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/60 border border-[#e7e5e4] dark:border-[#44403c] space-y-1.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar
-                        src={comment.author.avatar}
-                        name={comment.author.name}
-                        size="xs"
-                      />
-                      <span className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                        {comment.author.name}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-[#a8a29e]">
-                      {new Date(comment.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#4e4e4e] dark:text-[#d6d3d1] pl-7 leading-relaxed">
-                    {comment.content}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form onSubmit={handleAddComment} className="flex gap-2 pt-1">
-            <input
-              type="text"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Escribe un comentario..."
-              className="flex-1 h-11 px-4 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#44403c] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#292524] text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e]"
-            />
-            <Button type="submit" size="sm" variant="primary" disabled={!commentText.trim()}>
-              <Send className="w-3.5 h-3.5 mr-1" />
-              Enviar
-            </Button>
-          </form>
+            <FolderClosed className="h-3.5 w-3.5" />
+            {task.projectName}
+          </Link>
         </div>
       </div>
+
+      {/* iOS grouped list */}
+      <div className="divide-y divide-line overflow-hidden rounded-[16px] bg-fill">
+        <Row label="Estado">
+          <span className={cn('mr-2 h-2 w-2 rounded-full', toneClasses[getTaskStatusMeta(task.status).tone].dot)} />
+          <InlineSelect label="Estado" value={task.status} onChange={(v) => updateTask(task.id, { status: v as TaskStatus })}>
+            {TASK_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {getTaskStatusMeta(s).label}
+              </option>
+            ))}
+          </InlineSelect>
+        </Row>
+        <Row label="Prioridad">
+          <InlineSelect label="Prioridad" value={task.priority} onChange={(v) => updateTask(task.id, { priority: v as Priority })}>
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Crítica</option>
+          </InlineSelect>
+        </Row>
+        <Row label="Fecha límite">
+          <input
+            type="date"
+            aria-label="Fecha límite"
+            value={task.dueDate}
+            onChange={(e) => e.target.value && updateTask(task.id, { dueDate: e.target.value })}
+            className={cn('bg-transparent text-right text-[14px] outline-none', due.tone === 'gray' ? 'text-ink-2' : toneClasses[due.tone].ink)}
+          />
+        </Row>
+        <Row label="Responsable">
+          <span className="flex items-center gap-2 text-[14px] text-ink-2">
+            <Avatar src={task.assignee.avatar} name={task.assignee.name} size="xs" />
+            {task.assignee.name}
+          </span>
+        </Row>
+      </div>
+
+      {task.description && (
+        <div>
+          <h4 className="mb-2 pl-1 text-[13px] font-semibold text-ink">Notas</h4>
+          <p className="text-body whitespace-pre-line text-ink-2">{task.description}</p>
+        </div>
+      )}
+
+      <div>
+        <div className="mb-2 flex items-baseline justify-between pl-1">
+          <h4 className="text-[13px] font-semibold text-ink">Checklist</h4>
+          {task.subtasks.length > 0 && (
+            <span className="tabular text-[12px] text-ink-2">
+              {subDone} de {task.subtasks.length}
+            </span>
+          )}
+        </div>
+        {task.subtasks.length > 0 && <ProgressBar value={(subDone / task.subtasks.length) * 100} tone="green" className="mb-3" height={4} />}
+        <ul className="space-y-0.5">
+          <AnimatePresence initial={false}>
+            {task.subtasks.map((s) => (
+              <motion.li
+                key={s.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: easeApple }}
+              >
+                <div className="flex items-center gap-3 rounded-[12px] px-1 py-2">
+                  <Check checked={s.completed} onChange={() => toggleSubtask(task.id, s.id)} label={s.title} size={20} />
+                  <span className={cn('text-[14px] transition-colors', s.completed ? 'text-ink-3 line-through' : 'text-ink')}>{s.title}</span>
+                </div>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+        <form onSubmit={addSubtask} className="mt-1 flex items-center gap-3 px-1">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-ink-3">
+            <Plus className="h-4 w-4" />
+          </span>
+          <input
+            value={subtask}
+            onChange={(e) => setSubtask(e.target.value)}
+            placeholder="Añadir paso"
+            aria-label="Añadir paso a la checklist"
+            className="h-10 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-3"
+          />
+        </form>
+      </div>
+
+      <div>
+        <h4 className="mb-3 pl-1 text-[13px] font-semibold text-ink">Conversación</h4>
+        {task.comments.length === 0 ? (
+          <p className="pl-1 text-footnote text-ink-3">Nadie ha comentado todavía.</p>
+        ) : (
+          <ul className="space-y-3">
+            <AnimatePresence initial={false}>
+              {task.comments.map((c) => {
+                const mine = c.author.id === currentUser.id;
+                return (
+                  <motion.li
+                    key={c.id}
+                    initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={spring}
+                    style={{ transformOrigin: mine ? 'bottom right' : 'bottom left' }}
+                    className={cn('flex items-end gap-2', mine && 'flex-row-reverse')}
+                  >
+                    {!mine && <Avatar src={c.author.avatar} name={c.author.name} size="xs" />}
+                    <div className={cn('max-w-[80%]', mine && 'text-right')}>
+                      {!mine && <p className="mb-0.5 pl-3 text-[11px] text-ink-3">{firstName(c.author.name)}</p>}
+                      <p
+                        className={cn(
+                          'inline-block rounded-[20px] px-3.5 py-2 text-left text-[14px] leading-snug',
+                          mine ? 'rounded-br-[6px] bg-accent text-white' : 'rounded-bl-[6px] bg-fill-2 text-ink'
+                        )}
+                      >
+                        {c.content}
+                      </p>
+                      <p className={cn('mt-0.5 text-[10px] text-ink-3', mine ? 'pr-2' : 'pl-3')}>{formatTime(c.createdAt)}</p>
+                    </div>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </ul>
+        )}
+
+        <form onSubmit={send} className="mt-4 flex items-center gap-2 rounded-full bg-fill py-1 pr-1 pl-4 shadow-[inset_0_0_0_1px_var(--line)] focus-within:shadow-[inset_0_0_0_1px_var(--accent)]">
+          <input
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Escribe un comentario"
+            aria-label="Comentario"
+            className="h-9 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-3"
+          />
+          <motion.button
+            type="submit"
+            disabled={!comment.trim()}
+            aria-label="Enviar comentario"
+            animate={{ scale: comment.trim() ? 1 : 0.85, opacity: comment.trim() ? 1 : 0.4 }}
+            transition={spring}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white"
+          >
+            <ArrowUp className="h-4 w-4" strokeWidth={2.6} />
+          </motion.button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function TaskDetailDrawer() {
+  const { tasks, selectedTaskId, setSelectedTaskId } = useStore();
+  const task = tasks.find((t) => t.id === selectedTaskId);
+  // Hold on to the last task so the panel keeps its content while sliding out.
+  const [shown, setShown] = useState<Task | undefined>(task);
+  if (task && task !== shown) setShown(task);
+
+  return (
+    <Drawer isOpen={Boolean(task)} onClose={() => setSelectedTaskId(null)} title="Tarea">
+      {shown && <TaskDetail key={shown.id} task={task ?? shown} />}
     </Drawer>
   );
 }

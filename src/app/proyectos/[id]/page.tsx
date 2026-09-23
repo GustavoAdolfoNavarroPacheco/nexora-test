@@ -1,529 +1,337 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { use, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'motion/react';
+import { Pencil, Plus, FolderX, Kanban, Rows3, Mail, SearchX } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Pill, PriorityMarks } from '@/components/ui/badge';
+import { ProgressRing } from '@/components/ui/rings';
+import { Segmented } from '@/components/ui/segmented';
+import { Check } from '@/components/ui/check';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Reveal, Stagger, StaggerItem } from '@/components/ui/reveal';
+import { EmptyState, SectionTitle } from '@/components/layout/page-header';
 import { KanbanBoard } from '@/components/projects/kanban-board';
 import { ProjectMilestones } from '@/components/projects/project-milestones';
 import { EditProjectModal } from '@/components/projects/edit-project-modal';
+import { SearchField } from '@/components/projects/project-filters';
+import { easeApple } from '@/lib/motion';
 import {
+  cn,
+  daysUntil,
+  describeDue,
+  elapsedShare,
+  firstName,
+  formatDate,
+  getMemberStatusMeta,
   getPriorityMeta,
   getProjectStatusMeta,
   getTaskStatusMeta,
-  formatDate,
-  cn,
+  isAtRisk,
+  isOverdue,
+  normalizeText,
+  toneClasses,
+  toneColor,
 } from '@/lib/utils';
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Edit2,
-  Plus,
-  LayoutList,
-  Kanban,
-  Check,
-  FolderKanban,
-} from 'lucide-react';
 
-interface ProjectDetailPageProps {
-  params: Promise<{ id: string }>;
-}
+type Tab = 'resumen' | 'tareas' | 'actividad' | 'equipo';
 
-export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const router = useRouter();
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const {
-    projects,
-    tasks,
-    activities,
-    setIsCreateTaskOpen,
-    toggleTaskComplete,
-    setSelectedTaskId,
-  } = useStore();
+  const { projects, tasks, activities, setIsCreateTaskOpen, toggleTaskComplete, setSelectedTaskId } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'resumen' | 'tareas' | 'actividad' | 'equipo'>('resumen');
-  const [taskViewMode, setTaskViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('resumen');
+  const [taskView, setTaskView] = useState<'kanban' | 'list'>('kanban');
+  const [editOpen, setEditOpen] = useState(false);
   const [taskSearch, setTaskSearch] = useState('');
 
   const project = projects.find((p) => p.id === id);
 
   if (!project) {
     return (
-      <div className="py-20 text-center space-y-4">
-        <FolderKanban className="w-12 h-12 text-[#a8a29e] mx-auto" />
-        <h2 className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-          Proyecto no encontrado
-        </h2>
-        <p className="text-sm text-[#777169] max-w-sm mx-auto">
-          El proyecto solicitado no existe o fue archivado/eliminado.
-        </p>
-        <Link href="/proyectos">
-          <Button variant="primary">Volver a proyectos</Button>
-        </Link>
+      <div className="pt-10">
+        <EmptyState
+          icon={FolderX}
+          title="Este proyecto ya no existe"
+          description="Puede que lo hayan eliminado o que el enlace esté mal escrito."
+          action={
+            <Link href="/proyectos" className="inline-flex h-10 items-center rounded-full bg-accent px-5 text-sm font-medium text-white">
+              Ver proyectos
+            </Link>
+          }
+        />
       </div>
     );
   }
 
-  const priorityMeta = getPriorityMeta(project.priority);
-  const statusMeta = getProjectStatusMeta(project.status);
+  const status = getProjectStatusMeta(project.status);
+  const prio = getPriorityMeta(project.priority);
+  const risk = isAtRisk(project);
+  const own = tasks.filter((t) => t.projectId === project.id);
+  const done = own.filter((t) => t.completed).length;
+  const overdue = own.filter(isOverdue).length;
+  const inFlight = own.filter((t) => t.status === 'en_progreso' || t.status === 'en_revision').length;
+  const remaining = daysUntil(project.dueDate);
+  const elapsed = elapsedShare(project);
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
-  const completedTasks = projectTasks.filter((t) => t.completed);
-  const pendingTasks = projectTasks.filter((t) => !t.completed);
-  const overdueTasks = projectTasks.filter(
-    (t) => !t.completed && new Date(t.dueDate) < new Date('2026-09-02')
-  );
-
-  const filteredProjectTasks = projectTasks.filter((t) =>
-    taskSearch ? t.title.toLowerCase().includes(taskSearch.toLowerCase()) : true
-  );
-
-  const projectActivities = activities.filter(
-    (a) => a.projectId === project.id || a.entity === project.name
-  );
+  const q = normalizeText(taskSearch);
+  const visibleTasks = q ? own.filter((t) => normalizeText(t.title).includes(q)) : own;
+  const log = activities.filter((a) => a.projectId === project.id || a.entity === project.name);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Back Link */}
-      <div>
-        <Link
-          href="/proyectos"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Volver a proyectos
-        </Link>
-      </div>
-
-      {/* Project Header Banner Card */}
-      <div className="p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none space-y-6">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-medium px-3 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]">
-                {project.clientOrArea}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium border ${statusMeta.bg}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />
-                {statusMeta.label}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-xs font-medium border ${priorityMeta.bg}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${priorityMeta.dot}`} />
-                {priorityMeta.label}
-              </span>
-            </div>
-
-            <h1 className="font-editorial text-3xl sm:text-4xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
-              {project.name}
-            </h1>
-            <p className="text-sm text-[#777169] dark:text-[#a8a29e] max-w-2xl leading-relaxed">
-              {project.description}
-            </p>
+    <div className="space-y-6 sm:space-y-8">
+      {/* Header */}
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: easeApple }}
+        className="grid gap-6 pt-2 md:grid-cols-[1fr_auto] md:items-end"
+      >
+        <div className="min-w-0">
+          <p className="text-eyebrow text-ink-2">{project.clientOrArea}</p>
+          <h1 className="text-large-title mt-2 text-ink">{project.name}</h1>
+          <p className="text-body mt-2 max-w-2xl text-ink-2">{project.description}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Pill tone={status.tone} dot size="md">
+              {status.label}
+            </Pill>
+            <Pill tone={prio.tone} size="md">
+              <PriorityMarks marks={prio.marks} tone={prio.tone} />
+              Prioridad {prio.label.toLowerCase()}
+            </Pill>
+            {risk && (
+              <Pill tone="orange" size="md">
+                En riesgo
+              </Pill>
+            )}
           </div>
-
-          <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-              Editar
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsCreateTaskOpen(true)}
-            >
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <Button onClick={() => setIsCreateTaskOpen(true, { projectId: project.id })}>
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
               Nueva tarea
             </Button>
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Button>
           </div>
         </div>
 
-        {/* Sub-meta Info Strip */}
-        <div className="flex flex-wrap items-center gap-6 pt-5 border-t border-[#e7e5e4] dark:border-[#2e2a27] text-xs text-[#777169] dark:text-[#a8a29e]">
-          <div className="flex items-center gap-2">
-            <span className="text-[#a8a29e]">Responsable:</span>
-            <Avatar
-              src={project.manager.avatar}
-              name={project.manager.name}
-              size="xs"
-            />
-            <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
-              {project.manager.name}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-[#a8a29e]" />
-            <span>Inicio: {formatDate(project.startDate)}</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-[#a8a29e]" />
-            <span>Fecha límite: {formatDate(project.dueDate)}</span>
-          </div>
-
-          <div className="flex-1 min-w-[200px] flex items-center gap-3 ml-auto">
-            <span className="text-xs font-medium whitespace-nowrap text-[#0c0a09] dark:text-[#f5f5f5]">
-              {project.progress}% completado
-            </span>
-            <div className="flex-1 h-1 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
-              <div
-                className="h-full bg-[#292524] dark:bg-[#f5f5f5] rounded-full transition-all duration-500"
-                style={{ width: `${project.progress}%` }}
-              />
-            </div>
+        <div className="surface flex items-center gap-5 p-5 md:w-[340px]">
+          <ProgressRing
+            value={project.progress}
+            size={96}
+            stroke={10}
+            color={risk ? toneColor.orange : project.status === 'completado' ? toneColor.green : toneColor.blue}
+            showLabel={false}
+          />
+          <div className="min-w-0">
+            <AnimatedNumber value={project.progress} suffix="%" className="text-[34px] leading-none font-semibold tracking-[-0.04em] text-ink" />
+            <p className="mt-1 text-[12px] text-ink-2">
+              completado · {elapsed}% del plazo usado
+            </p>
+            <p className={cn('mt-2 text-[13px] font-medium', remaining < 0 ? 'text-red-ink' : remaining <= 7 ? 'text-orange-ink' : 'text-ink')}>
+              {remaining < 0
+                ? `Entrega vencida hace ${Math.abs(remaining)} días`
+                : remaining === 0
+                  ? 'Se entrega hoy'
+                  : `Faltan ${remaining} días · ${formatDate(project.dueDate)}`}
+            </p>
           </div>
         </div>
-      </div>
+      </motion.section>
 
-      {/* Tabs Navigation */}
-      <div className="border-b border-[#e7e5e4] dark:border-[#2e2a27] flex items-center justify-between gap-4 overflow-x-auto">
-        <nav className="flex items-center gap-4">
-          {(
-            [
-              { id: 'resumen', label: 'Resumen' },
-              { id: 'tareas', label: `Tareas (${projectTasks.length})` },
-              { id: 'actividad', label: 'Actividad' },
-              { id: 'equipo', label: `Equipo (${project.team.length})` },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'py-3 text-sm font-medium border-b-2 transition-all select-none whitespace-nowrap cursor-pointer',
-                activeTab === tab.id
-                  ? 'border-[#0c0a09] text-[#0c0a09] dark:border-[#f5f5f5] dark:text-[#f5f5f5]'
-                  : 'border-transparent text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e]'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {activeTab === 'tareas' && (
-          <div className="flex items-center gap-2 py-1">
-            <div className="flex items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524]">
-              <button
-                onClick={() => setTaskViewMode('kanban')}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer',
-                  taskViewMode === 'kanban'
-                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                    : 'text-[#777169]'
-                )}
-              >
-                <Kanban className="w-3.5 h-3.5" />
-                <span>Kanban</span>
-              </button>
-              <button
-                onClick={() => setTaskViewMode('list')}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer',
-                  taskViewMode === 'list'
-                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                    : 'text-[#777169]'
-                )}
-              >
-                <LayoutList className="w-3.5 h-3.5" />
-                <span>Lista</span>
-              </button>
-            </div>
-          </div>
+      {/* Tabs */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <Segmented
+            label="Secciones del proyecto"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'resumen', label: 'Resumen' },
+              { value: 'tareas', label: `Tareas ${own.length}` },
+              { value: 'actividad', label: 'Actividad' },
+              { value: 'equipo', label: `Equipo ${project.team.length}` },
+            ]}
+          />
+        </div>
+        {tab === 'tareas' && (
+          <Segmented
+            label="Vista de tareas"
+            size="sm"
+            value={taskView}
+            onChange={setTaskView}
+            options={[
+              { value: 'kanban', label: 'Tablero', icon: Kanban },
+              { value: 'list', label: 'Lista', icon: Rows3 },
+            ]}
+          />
         )}
       </div>
 
-      {/* Tab 1: Resumen */}
-      {activeTab === 'resumen' && (
-        <div className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
-              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
-                Tareas completadas
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {completedTasks.length}
-                </span>
-                <span className="text-xs text-[#777169]">
-                  de {projectTasks.length} totales
-                </span>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
-              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
-                Tareas pendientes
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {pendingTasks.length}
-                </span>
-                <span className="text-xs text-[#777169]">en curso</span>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
-              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
-                Tareas vencidas
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {overdueTasks.length}
-                </span>
-                <span className="text-xs text-[#777169]">atención</span>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27]">
-              <span className="text-[12px] text-[#777169] dark:text-[#a8a29e] font-medium uppercase tracking-wider">
-                Miembros asignados
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-editorial text-3xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {project.team.length}
-                </span>
-                <span className="text-xs text-[#777169]">personas</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Milestones & Team Preview */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-8">
-              <ProjectMilestones
-                milestones={project.milestones}
-                projectId={project.id}
-              />
-            </div>
-
-            <div className="lg:col-span-4 p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-4">
-              <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
-                Equipo asignado
-              </h3>
-
-              <div className="space-y-3">
-                {project.team.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar
-                        src={member.avatar}
-                        name={member.name}
-                        size="xs"
-                        status={member.status}
-                      />
-                      <div>
-                        <p className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
-                          {member.name}
-                        </p>
-                        <p className="text-[11px] text-[#777169] dark:text-[#a8a29e]">{member.role}</p>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.35, ease: easeApple }}
+        >
+          {tab === 'resumen' && (
+            <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
+              <div className="space-y-6 lg:col-span-7">
+                <Reveal>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'Cerradas', value: done, tone: 'green' as const },
+                      { label: 'En curso', value: inFlight, tone: 'blue' as const },
+                      { label: 'Vencidas', value: overdue, tone: overdue ? ('red' as const) : ('gray' as const) },
+                    ].map((s) => (
+                      <div key={s.label} className="surface p-4 sm:p-5">
+                        <span className={cn('mb-3 block h-1.5 w-6 rounded-full', toneClasses[s.tone].dot)} />
+                        <AnimatedNumber value={s.value} className="text-[28px] leading-none font-semibold tracking-[-0.04em] text-ink" />
+                        <p className="mt-1.5 text-[12px] text-ink-2">{s.label}</p>
                       </div>
-                    </div>
-
-                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169]">
-                      {projectTasks.filter((t) => t.assignee.id === member.id).length} tareas
-                    </span>
+                    ))}
                   </div>
-                ))}
+                </Reveal>
+                <Reveal>
+                  <ProjectMilestones milestones={project.milestones} projectId={project.id} />
+                </Reveal>
               </div>
+
+              <Reveal className="lg:col-span-5" delay={0.08}>
+                <section className="surface p-5 sm:p-7">
+                  <SectionTitle title="Equipo" detail={`Dirige ${project.manager.name}`} />
+                  <Stagger as="ul" className="mt-4 divide-y divide-line">
+                    {project.team.map((m) => {
+                      const count = own.filter((t) => t.assignee.id === m.id && !t.completed).length;
+                      return (
+                        <StaggerItem as="li" key={m.id} className="flex items-center gap-3 py-3">
+                          <Avatar src={m.avatar} name={m.name} size="sm" status={m.status} />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[14px] font-medium text-ink">{m.name}</p>
+                            <p className="truncate text-[12px] text-ink-2">
+                              {m.id === project.manager.id && <span className="font-medium text-accent-ink">Responsable · </span>}
+                              {m.role}
+                            </p>
+                          </div>
+                          <span className="tabular shrink-0 text-[12px] text-ink-2">{count} abiertas</span>
+                        </StaggerItem>
+                      );
+                    })}
+                  </Stagger>
+                </section>
+              </Reveal>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Tab 2: Tareas */}
-      {activeTab === 'tareas' && (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <input
-              type="text"
-              value={taskSearch}
-              onChange={(e) => setTaskSearch(e.target.value)}
-              placeholder="Buscar en tareas del proyecto..."
-              className="max-w-xs w-full h-10 px-4 text-xs bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-lg text-[#292524] dark:text-[#f5f5f5] placeholder:text-[#a8a29e] focus:outline-none focus:ring-1 focus:ring-[#292524]"
-            />
-
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => setIsCreateTaskOpen(true)}
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Nueva tarea
-            </Button>
-          </div>
-
-          {taskViewMode === 'kanban' ? (
-            <KanbanBoard tasks={filteredProjectTasks} projectId={project.id} />
-          ) : (
-            <div className="rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] divide-y divide-[#e7e5e4] dark:divide-[#2e2a27] overflow-hidden">
-              {filteredProjectTasks.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[#a8a29e]">
-                  No hay tareas registradas con los filtros actuales.
-                </div>
+          {tab === 'tareas' && (
+            <div className="space-y-4">
+              <SearchField value={taskSearch} onChange={setTaskSearch} placeholder="Buscar en este proyecto" className="max-w-md" />
+              {visibleTasks.length === 0 ? (
+                <EmptyState
+                  icon={SearchX}
+                  title={own.length ? 'Ninguna tarea coincide' : 'Este proyecto aún no tiene tareas'}
+                  description={own.length ? 'Prueba con otra palabra.' : 'Crea la primera para empezar a medir el avance.'}
+                  action={
+                    !own.length && (
+                      <Button onClick={() => setIsCreateTaskOpen(true, { projectId: project.id })}>
+                        <Plus className="h-4 w-4" strokeWidth={2.5} />
+                        Nueva tarea
+                      </Button>
+                    )
+                  }
+                />
+              ) : taskView === 'kanban' ? (
+                <KanbanBoard tasks={visibleTasks} projectId={project.id} />
               ) : (
-                filteredProjectTasks.map((task) => {
-                  const pMeta = getPriorityMeta(task.priority);
-                  const sMeta = getTaskStatusMeta(task.status);
-
-                  return (
-                    <div
-                      key={task.id}
-                      className="p-4 flex items-center justify-between gap-4 hover:bg-[#fafafa] dark:hover:bg-[#292524]/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                        <button
-                          onClick={() => toggleTaskComplete(task.id)}
-                          className="shrink-0 cursor-pointer"
-                        >
-                          {task.completed ? (
-                            <div className="w-4 h-4 rounded bg-[#0c0a09] dark:bg-[#f5f5f5] text-white dark:text-[#0c0a09] flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5" />
-                            </div>
-                          ) : (
-                            <div className="w-4 h-4 rounded border border-[#d6d3d1] hover:border-[#0c0a09] dark:border-[#44403c] transition-colors" />
-                          )}
-                        </button>
-
-                        <div
-                          onClick={() => setSelectedTaskId(task.id)}
-                          className="min-w-0 flex-1 cursor-pointer"
-                        >
-                          <h4
-                            className={cn(
-                              'text-xs font-medium truncate group-hover:underline',
-                              task.completed && 'line-through text-[#a8a29e]'
-                            )}
-                          >
-                            {task.title}
-                          </h4>
-                          <span className="text-[11px] text-[#a8a29e]">
-                            Entrega: {formatDate(task.dueDate)}
+                <ul className="surface divide-y divide-line overflow-hidden">
+                  {visibleTasks.map((t) => {
+                    const p = getPriorityMeta(t.priority);
+                    const s = getTaskStatusMeta(t.status);
+                    const due = describeDue(t.dueDate, t.completed);
+                    return (
+                      <li key={t.id} className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-fill sm:px-6">
+                        <Check checked={t.completed} onChange={() => toggleTaskComplete(t.id)} label={`Completar ${t.title}`} />
+                        <button onClick={() => setSelectedTaskId(t.id)} className="min-w-0 flex-1 text-left">
+                          <span className={cn('block truncate text-[14px]', t.completed ? 'text-ink-3 line-through' : 'text-ink')}>
+                            <PriorityMarks marks={p.marks} tone={p.tone} className="mr-1" />
+                            {t.title}
                           </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border ${sMeta.bg}`}
-                        >
-                          {sMeta.label}
-                        </span>
-
-                        <span
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border ${pMeta.bg}`}
-                        >
-                          {pMeta.label}
-                        </span>
-
-                        <Avatar
-                          src={task.assignee.avatar}
-                          name={task.assignee.name}
-                          size="xs"
-                        />
-                      </div>
-                    </div>
-                  );
-                })
+                          <span className={cn('text-[12px]', due.tone === 'gray' ? 'text-ink-2' : toneClasses[due.tone].ink)}>{due.label}</span>
+                        </button>
+                        <Pill tone={s.tone} className="hidden sm:inline-flex">
+                          {s.label}
+                        </Pill>
+                        <Avatar src={t.assignee.avatar} name={t.assignee.name} size="xs" />
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Tab 3: Actividad */}
-      {activeTab === 'actividad' && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-5">
-          <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] tracking-tight pb-3 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
-            Registro cronológico del proyecto
-          </h3>
+          {tab === 'actividad' && (
+            <section className="surface p-5 sm:p-7">
+              {log.length === 0 ? (
+                <p className="py-8 text-center text-footnote text-ink-2">Todavía no hay movimientos en este proyecto.</p>
+              ) : (
+                <Stagger as="ol" className="relative space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-line">
+                  {log.map((a) => (
+                    <StaggerItem as="li" key={a.id} className="relative flex gap-3.5">
+                      <Avatar src={a.user.avatar} name={a.user.name} size="sm" className="rounded-full ring-4 ring-card" />
+                      <div className="min-w-0 pt-1 text-[14px] leading-snug">
+                        <p className="text-ink-2">
+                          <span className="font-medium text-ink">{firstName(a.user.name)}</span> {a.action}{' '}
+                          <span className="font-medium text-ink">{a.entity}</span>
+                        </p>
+                        <p className="mt-0.5 text-[12px] text-ink-3">{a.timeAgo}</p>
+                      </div>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              )}
+            </section>
+          )}
 
-          <div className="space-y-4">
-            {projectActivities.length === 0 ? (
-              <p className="text-xs text-[#a8a29e] italic">
-                Aún no hay registros de actividad específicos para este proyecto.
-              </p>
-            ) : (
-              projectActivities.map((act) => (
-                <div key={act.id} className="flex items-start gap-3 text-xs">
-                  <Avatar src={act.user.avatar} name={act.user.name} size="xs" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[#4e4e4e] dark:text-[#d6d3d1]">
-                      <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5]">
-                        {act.user.name}
-                      </span>{' '}
-                      {act.action}{' '}
-                      <span className="font-medium">&ldquo;{act.entity}&rdquo;</span>
+          {tab === 'equipo' && (
+            <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {project.team.map((m) => {
+                const st = getMemberStatusMeta(m.status);
+                const mine = own.filter((t) => t.assignee.id === m.id);
+                return (
+                  <StaggerItem key={m.id} className="surface flex flex-col items-center p-6 text-center">
+                    <Avatar src={m.avatar} name={m.name} size="xl" status={m.status} />
+                    <p className="text-headline mt-3 text-ink">{m.name}</p>
+                    <p className="text-[12px] text-ink-2">{m.role}</p>
+                    <Pill tone={st.tone} className="mt-3">
+                      {st.label}
+                    </Pill>
+                    <p className="mt-4 text-[12px] text-ink-2">
+                      {mine.filter((t) => t.completed).length} de {mine.length} tareas cerradas aquí
                     </p>
-                    <span className="text-[11px] text-[#a8a29e] mt-0.5 block">
-                      {act.timeAgo}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-accent-soft px-4 text-[13px] font-medium text-accent-ink transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_20%,transparent)]"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Escribir
+                    </a>
+                  </StaggerItem>
+                );
+              })}
+            </Stagger>
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Tab 4: Equipo */}
-      {activeTab === 'equipo' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {project.team.map((member) => (
-            <div
-              key={member.id}
-              className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] space-y-4"
-            >
-              <div className="flex items-start justify-between">
-                <Avatar
-                  src={member.avatar}
-                  name={member.name}
-                  size="md"
-                  status={member.status}
-                />
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-medium capitalize bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]">
-                  {member.status}
-                </span>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {member.name}
-                </h4>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e]">{member.role}</p>
-                <p className="text-[11px] text-[#a8a29e] mt-0.5">{member.department}</p>
-              </div>
-
-              <div className="pt-3 border-t border-[#e7e5e4] dark:border-[#2e2a27] text-xs flex justify-between text-[#777169]">
-                <span>Tareas asignadas:</span>
-                <span className="font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                  {projectTasks.filter((t) => t.assignee.id === member.id).length}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      <EditProjectModal
-        project={project}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-      />
+      <EditProjectModal project={editOpen ? project : null} onClose={() => setEditOpen(false)} />
     </div>
   );
 }

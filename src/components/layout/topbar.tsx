@@ -1,177 +1,177 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
-import {
-  Menu,
-  Search,
-  Bell,
-  Sun,
-  Moon,
-  Plus,
-  ChevronRight,
-} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react';
+import { Search, Plus, Bell, Sun, Moon, ChevronLeft } from 'lucide-react';
 import { useStore } from '@/lib/store';
-import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { NotificationFlyout } from '@/components/notifications/notification-flyout';
+import { useClickOutside, useEscape, useMediaQuery, useModKey } from '@/lib/hooks';
+import { spring, easeApple } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import { NotificationFlyout } from '@/components/notifications/notification-flyout';
+import { NexoraMark } from './sidebar';
+import { titleForPath } from './nav-items';
 
-interface TopbarProps {
-  onOpenMobileMenu: () => void;
+function IconButton({
+  label,
+  onClick,
+  children,
+  className,
+  active,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+  active?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'relative flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-[background-color,color,transform] duration-200 hover:bg-fill-2 hover:text-ink active:scale-90',
+        active && 'bg-fill-2 text-ink',
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
-export function Topbar({ onOpenMobileMenu }: TopbarProps) {
+export function Topbar() {
   const pathname = usePathname();
-  const {
-    currentUser,
-    notifications,
-    theme,
-    setTheme,
-    setIsCommandPaletteOpen,
-    setIsCreateProjectOpen,
-    projects,
-  } = useStore();
-
+  const { notifications, theme, setTheme, setIsCommandPaletteOpen, setIsCreateProjectOpen, projects } = useStore();
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const closeNotifications = useCallback(() => setIsNotificationOpen(false), []);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  useClickOutside(notificationRef, isNotificationOpen, closeNotifications);
+  useEscape(isNotificationOpen, closeNotifications);
+  const modKey = useModKey();
 
-  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 64));
 
-  const getBreadcrumbs = () => {
-    if (pathname === '/') {
-      return [{ label: 'Dashboard', href: '/' }];
-    }
-    if (pathname.startsWith('/proyectos/')) {
-      const projectId = pathname.split('/')[2];
-      const project = projects.find((p) => p.id === projectId);
-      return [
-        { label: 'Proyectos', href: '/proyectos' },
-        { label: project?.name || 'Detalle', href: pathname },
-      ];
-    }
-    if (pathname === '/proyectos') {
-      return [{ label: 'Proyectos', href: '/proyectos' }];
-    }
-    if (pathname === '/tareas') {
-      return [{ label: 'Tareas', href: '/tareas' }];
-    }
-    if (pathname === '/equipo') {
-      return [{ label: 'Equipo', href: '/equipo' }];
-    }
-    if (pathname === '/actividad') {
-      return [{ label: 'Actividad', href: '/actividad' }];
-    }
-    if (pathname === '/reportes') {
-      return [{ label: 'Reportes', href: '/reportes' }];
-    }
-    if (pathname === '/configuracion') {
-      return [{ label: 'Configuración', href: '/configuracion' }];
-    }
-    return [{ label: 'Nexora', href: '/' }];
-  };
+  const unread = notifications.filter((n) => !n.read).length;
+  const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
 
-  const breadcrumbs = getBreadcrumbs();
+  const detailMatch = pathname.match(/^\/proyectos\/([^/]+)$/);
+  const detailProject = detailMatch ? projects.find((p) => p.id === detailMatch[1]) : undefined;
+  const compactTitle = detailProject?.name ?? titleForPath(pathname);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-6 sm:px-8 bg-[#f5f5f5]/90 dark:bg-[#0c0a09]/90 backdrop-blur-xs border-b border-[#e7e5e4] dark:border-[#2e2a27] transition-colors select-none">
-      {/* Left: Mobile Toggle & Breadcrumbs */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onOpenMobileMenu}
-          className="md:hidden p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:hover:bg-[#292524]"
-          aria-label="Abrir menú"
-        >
-          <Menu className="w-4 h-4" />
-        </button>
+    <header
+      className={cn(
+        'sticky top-0 z-30 transition-[background-color,box-shadow,backdrop-filter] duration-300 ease-apple',
+        scrolled ? 'glass bg-chrome shadow-[0_0.5px_0_var(--line)]' : 'bg-transparent'
+      )}
+    >
+      <div className="mx-auto flex h-[56px] w-full max-w-[1240px] items-center gap-3 px-4 sm:px-8">
+        {/* Leading: back button on detail pages, brand on phones */}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {detailMatch ? (
+            <Link
+              href="/proyectos"
+              className="-ml-2 flex h-9 items-center gap-0.5 rounded-full pr-3 pl-1 text-[15px] text-accent-ink transition-colors hover:bg-accent-soft"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+              Proyectos
+            </Link>
+          ) : (
+            <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="Inicio">
+              <NexoraMark className="h-7 w-7" />
+            </Link>
+          )}
 
-        <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-2 text-xs">
-          {breadcrumbs.map((crumb, i) => (
-            <React.Fragment key={crumb.href}>
-              {i > 0 && <ChevronRight className="w-3 h-3 text-[#a8a29e] shrink-0" />}
-              {i === breadcrumbs.length - 1 ? (
-                <span className="font-medium text-[#0c0a09] dark:text-[#f5f5f5] max-w-[240px] truncate">
-                  {crumb.label}
-                </span>
-              ) : (
-                <Link
-                  href={crumb.href}
-                  className="text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white transition-colors"
-                >
-                  {crumb.label}
-                </Link>
-              )}
-            </React.Fragment>
-          ))}
-        </nav>
-      </div>
-
-      {/* Right: Search, Actions, Notifications & Avatar */}
-      <div className="flex items-center gap-3">
-        {/* Search Input Button */}
-        <button
-          type="button"
-          onClick={() => setIsCommandPaletteOpen(true)}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1c1917] hover:bg-[#fafafa] dark:hover:bg-[#292524] border border-[#e7e5e4] dark:border-[#2e2a27] text-xs text-[#777169] dark:text-[#a8a29e] transition-all w-36 sm:w-56 justify-between group cursor-pointer"
-        >
-          <div className="flex items-center gap-2 truncate">
-            <Search className="w-3.5 h-3.5 text-[#a8a29e] group-hover:text-[#0c0a09] dark:group-hover:text-white transition-colors shrink-0" />
-            <span className="truncate">Buscar...</span>
-          </div>
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono text-[#777169] bg-[#f0efed] dark:bg-[#292524] rounded-full border border-[#e7e5e4] dark:border-[#44403c] shrink-0">
-            ⌘K
-          </kbd>
-        </button>
-
-        {/* Quick New Project Button */}
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => setIsCreateProjectOpen(true)}
-          className="hidden sm:inline-flex"
-        >
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Nuevo
-        </Button>
-
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:text-white dark:hover:bg-[#292524] transition-colors cursor-pointer"
-          title={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
-          aria-label="Alternar modo oscuro"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            className="p-2 rounded-full text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:text-white dark:hover:bg-[#292524] transition-colors relative cursor-pointer"
-            aria-label="Abrir notificaciones"
-          >
-            <Bell className="w-4 h-4" />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#0c0a09] dark:bg-[#a7e5d3] ring-2 ring-[#f5f5f5] dark:ring-[#0c0a09]" />
+          <AnimatePresence>
+            {scrolled && (
+              <motion.span
+                key={compactTitle}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.3, ease: easeApple }}
+                className={cn(
+                  'truncate text-[15px] font-semibold tracking-[-0.02em] text-ink',
+                  detailMatch ? 'hidden sm:block' : ''
+                )}
+              >
+                {compactTitle}
+              </motion.span>
             )}
-          </button>
-
-          <NotificationFlyout
-            isOpen={isNotificationOpen}
-            onClose={() => setIsNotificationOpen(false)}
-          />
+          </AnimatePresence>
         </div>
 
-        {/* User Avatar */}
-        <Link href="/configuracion" className="pl-0.5">
-          <Avatar
-            src={currentUser.avatar}
-            name={currentUser.name}
-            size="sm"
-            status={currentUser.status}
-          />
-        </Link>
+        {/* Trailing actions */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <button
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="group hidden h-9 w-60 items-center gap-2 rounded-full bg-fill-2 pr-2 pl-3.5 text-[13px] text-ink-3 transition-colors hover:text-ink-2 md:flex"
+          >
+            <Search className="h-4 w-4 transition-colors group-hover:text-accent" strokeWidth={2.2} />
+            <span className="flex-1 text-left">Buscar</span>
+            <kbd className="rounded-md bg-card px-1.5 py-0.5 font-sans text-[10px] font-medium text-ink-2 shadow-card">{modKey} K</kbd>
+          </button>
+          <IconButton label="Buscar" onClick={() => setIsCommandPaletteOpen(true)} className="md:hidden">
+            <Search className="h-[18px] w-[18px]" strokeWidth={2.1} />
+          </IconButton>
+
+          <IconButton label={isDark ? 'Usar modo claro' : 'Usar modo oscuro'} onClick={() => setTheme(isDark ? 'light' : 'dark')}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={isDark ? 'sun' : 'moon'}
+                initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
+                transition={spring}
+                className="flex"
+              >
+                {isDark ? <Sun className="h-[18px] w-[18px]" strokeWidth={2.1} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={2.1} />}
+              </motion.span>
+            </AnimatePresence>
+          </IconButton>
+
+          <div ref={notificationRef} className="relative">
+            <IconButton
+              label={unread > 0 ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}
+              onClick={() => setIsNotificationOpen((o) => !o)}
+              active={isNotificationOpen}
+            >
+              <Bell className="h-[18px] w-[18px]" strokeWidth={2.1} />
+              <AnimatePresence>
+                {unread > 0 && (
+                  <motion.span
+                    key={unread}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={spring}
+                    className="tabular absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red px-1 text-[10px] font-semibold text-white ring-2 ring-canvas"
+                  >
+                    {unread}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </IconButton>
+            <NotificationFlyout isOpen={isNotificationOpen} onClose={closeNotifications} />
+          </div>
+
+          <button
+            onClick={() => setIsCreateProjectOpen(true)}
+            className="ml-1 hidden h-9 items-center gap-1.5 rounded-full bg-accent pr-4 pl-3 text-[13px] font-medium text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)] transition-[background-color,transform] duration-200 hover:bg-accent-hover active:scale-95 sm:flex"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            Nuevo proyecto
+          </button>
+          <IconButton label="Nuevo proyecto" onClick={() => setIsCreateProjectOpen(true)} className="bg-accent text-white hover:bg-accent-hover hover:text-white sm:hidden">
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          </IconButton>
+        </div>
       </div>
     </header>
   );

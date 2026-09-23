@@ -1,205 +1,103 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
+import { Ellipsis, Flag, ListChecks } from 'lucide-react';
 import { Project } from '@/lib/types';
-import { Avatar } from '@/components/ui/avatar';
-import {
-  getPriorityMeta,
-  getProjectStatusMeta,
-  formatDate,
-} from '@/lib/utils';
-import {
-  Calendar,
-  CheckSquare,
-  MoreVertical,
-  ExternalLink,
-  Edit2,
-  Copy,
-  Archive,
-  Trash2,
-} from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { AvatarStack } from '@/components/ui/avatar';
+import { Pill, PriorityMarks } from '@/components/ui/badge';
+import { ProgressRing } from '@/components/ui/rings';
+import { Menu } from '@/components/ui/menu';
+import { easeApple } from '@/lib/motion';
+import { cn, describeDue, getPriorityMeta, getProjectStatusMeta, isAtRisk, toneClasses, toneColor } from '@/lib/utils';
+import { useProjectMenu } from './project-actions';
 
-interface ProjectCardProps {
+export function ProjectCard({
+  project,
+  onEdit,
+  onDelete,
+  index = 0,
+}: {
   project: Project;
-  onEdit: (project: Project) => void;
-}
+  onEdit: (p: Project) => void;
+  onDelete: (p: Project) => void;
+  index?: number;
+}) {
+  const { tasks } = useStore();
+  const menuFor = useProjectMenu(onEdit, onDelete);
 
-export function ProjectCard({ project, onEdit }: ProjectCardProps) {
-  const { tasks, deleteProject, archiveProject, addProject } = useStore();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const priorityMeta = getPriorityMeta(project.priority);
-  const statusMeta = getProjectStatusMeta(project.status);
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
-
-  const handleDuplicate = () => {
-    addProject({
-      name: `${project.name} (Copia)`,
-      description: project.description,
-      clientOrArea: project.clientOrArea,
-      managerId: project.manager.id,
-      teamIds: project.team.map((t) => t.id),
-      priority: project.priority,
-      startDate: project.startDate,
-      dueDate: project.dueDate,
-      status: 'planificacion',
-    });
-    setIsMenuOpen(false);
-  };
+  const status = getProjectStatusMeta(project.status);
+  const prio = getPriorityMeta(project.priority);
+  const due = describeDue(project.dueDate, project.status === 'completado');
+  const risk = isAtRisk(project);
+  const own = tasks.filter((t) => t.projectId === project.id);
+  const openTasks = own.filter((t) => !t.completed).length;
+  const milestonesDone = project.milestones.filter((m) => m.completed).length;
 
   return (
-    <div className="p-6 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none flex flex-col justify-between group relative transition-colors">
-      <div>
-        {/* Top row: Area & Menu */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e]">
-            {project.clientOrArea}
-          </span>
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.6, ease: easeApple, delay: Math.min(index, 8) * 0.04 }}
+      whileHover={{ y: -4 }}
+      className="group surface relative flex flex-col p-5 transition-shadow duration-300 ease-apple hover:shadow-lift sm:p-6"
+    >
+      {/* Whole-card link sits under the content; interactive bits sit above it. */}
+      <Link href={`/proyectos/${project.id}`} className="absolute inset-0 z-0 rounded-[22px]" aria-label={`Abrir ${project.name}`} />
 
-          <div className="relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-1.5 rounded-full text-[#a8a29e] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:hover:text-white dark:hover:bg-[#292524] transition-colors cursor-pointer"
-              aria-label="Opciones del proyecto"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-
-            {isMenuOpen && (
-              <div
-                className="absolute right-0 top-8 w-44 bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-xl shadow-lg z-20 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100"
-                onMouseLeave={() => setIsMenuOpen(false)}
-              >
-                <Link
-                  href={`/proyectos/${project.id}`}
-                  className="flex items-center gap-2 px-3.5 py-2 text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#fafafa] dark:hover:bg-[#292524]"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Ver proyecto
-                </Link>
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onEdit(project);
-                  }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#fafafa] dark:hover:bg-[#292524] text-left cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Editar
-                </button>
-                <button
-                  onClick={handleDuplicate}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-[#4e4e4e] dark:text-[#a8a29e] hover:bg-[#fafafa] dark:hover:bg-[#292524] text-left cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  Duplicar
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    archiveProject(project.id);
-                  }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-[#777169] hover:bg-[#f0efed] dark:hover:bg-[#292524] text-left cursor-pointer"
-                >
-                  <Archive className="w-3.5 h-3.5" />
-                  Archivar
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    deleteProject(project.id);
-                  }}
-                  className="w-full flex items-center gap-2 px-3.5 py-2 text-[#0c0a09] hover:bg-[#f0efed] dark:text-white dark:hover:bg-[#292524] text-left cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Eliminar
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Project Title & Description */}
-        <div className="mt-3">
-          <Link
-            href={`/proyectos/${project.id}`}
-            className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5] hover:underline transition-all line-clamp-1"
-          >
-            {project.name}
-          </Link>
-          <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-1 line-clamp-2 leading-relaxed">
-            {project.description}
-          </p>
-        </div>
-
-        {/* Badges */}
-        <div className="flex items-center gap-2 mt-4">
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusMeta.bg}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />
-            {statusMeta.label}
-          </span>
-
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${priorityMeta.bg}`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${priorityMeta.dot}`} />
-            {priorityMeta.label}
-          </span>
+      <div className="pointer-events-none relative z-10 flex items-start justify-between gap-3">
+        <p className="text-eyebrow truncate pt-1.5 text-ink-2">{project.clientOrArea}</p>
+        <div className="pointer-events-auto -mt-1 -mr-2">
+          <Menu label={`Opciones de ${project.name}`} trigger={<Ellipsis className="h-[18px] w-[18px]" />} items={menuFor(project)} />
         </div>
       </div>
 
-      {/* Footer Area: Progress & Meta */}
-      <div className="mt-6 pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27] space-y-3">
-        {/* Progress Bar */}
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#a8a29e] text-[11px]">Avance</span>
-            <span className="text-[#0c0a09] dark:text-[#f5f5f5] font-medium">{project.progress}%</span>
-          </div>
-          <div className="w-full h-1 rounded-full bg-[#f0efed] dark:bg-[#292524] overflow-hidden">
-            <div
-              className="h-full bg-[#292524] dark:bg-[#f5f5f5] rounded-full transition-all duration-500"
-              style={{ width: `${project.progress}%` }}
-            />
-          </div>
-        </div>
+      <div className="pointer-events-none relative z-10 mt-2 flex-1">
+        <h3 className="text-title-2 line-clamp-2 text-ink transition-colors duration-200 group-hover:text-accent-ink">{project.name}</h3>
+        <p className="text-footnote mt-1.5 line-clamp-2 text-ink-2">{project.description}</p>
+      </div>
 
-        {/* Meta info */}
-        <div className="flex items-center justify-between text-xs text-[#777169] dark:text-[#a8a29e] pt-1">
-          <div className="flex items-center -space-x-2 overflow-hidden">
-            {project.team.slice(0, 3).map((member) => (
-              <Avatar
-                key={member.id}
-                src={member.avatar}
-                name={member.name}
-                size="xs"
-                className="ring-2 ring-white dark:ring-[#1c1917]"
-              />
-            ))}
-            {project.team.length > 3 && (
-              <div className="w-6 h-6 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e] text-[10px] font-medium flex items-center justify-center ring-2 ring-white dark:ring-[#1c1917]">
-                +{project.team.length - 3}
-              </div>
-            )}
+      <div className="pointer-events-none relative z-10 mt-5 flex items-center gap-4">
+        <ProgressRing
+          value={project.progress}
+          size={56}
+          stroke={6}
+          color={risk ? toneColor.orange : project.status === 'completado' ? toneColor.green : toneColor.blue}
+          labelClassName="text-[13px]"
+        />
+        <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+          <div className="flex items-center gap-1.5 text-ink-2">
+            <ListChecks className="h-3.5 w-3.5 text-ink-3" />
+            
+            <span>{openTasks} abiertas</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <CheckSquare className="w-3.5 h-3.5 text-[#a8a29e]" />
-              <span>{projectTasks.length}</span>
+          <div className="flex items-center gap-1.5 text-ink-2">
+            <Flag className="h-3.5 w-3.5 text-ink-3" />
+            
+            <span>
+              {milestonesDone}/{project.milestones.length} hitos
             </span>
-
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#a8a29e]" />
-              <span>{formatDate(project.dueDate)}</span>
-            </span>
+          </div>
+          <div className="col-span-2 flex flex-wrap items-center gap-1.5 pt-1">
+            <Pill tone={status.tone} dot>
+              {status.label}
+            </Pill>
+            {risk && <Pill tone="orange">En riesgo</Pill>}
           </div>
         </div>
       </div>
-    </div>
+
+      <div className="pointer-events-none relative z-10 mt-5 flex items-center justify-between border-t border-line pt-4">
+        <AvatarStack users={project.team} max={4} />
+        <div className="flex items-center gap-2 text-[12px]">
+          <PriorityMarks marks={prio.marks} tone={prio.tone} />
+          <span className={cn('font-medium', due.tone === 'gray' ? 'text-ink-2' : toneClasses[due.tone].ink)}>{due.label}</span>
+        </div>
+      </div>
+    </motion.article>
   );
 }

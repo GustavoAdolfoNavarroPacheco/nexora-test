@@ -1,318 +1,282 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useStore } from '@/lib/store';
+import { AnimatePresence, motion } from 'motion/react';
+import { Building2, UserRound, Bell, Lock, SunMoon, Check as CheckIcon, RotateCcw } from 'lucide-react';
+import { useStore, type ThemeMode } from '@/lib/store';
+import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog } from '@/components/ui/alert-dialog';
+import { spring, easeApple } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import {
-  Building,
-  User,
-  Bell,
-  Shield,
-  Palette,
-  Sun,
-  Moon,
-  Laptop,
-  Check,
-} from 'lucide-react';
+
+type Section = 'general' | 'perfil' | 'notificaciones' | 'seguridad' | 'apariencia';
+
+const SECTIONS: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
+  { id: 'general', label: 'General', icon: Building2, color: 'bg-[#8e8e93]' },
+  { id: 'perfil', label: 'Perfil', icon: UserRound, color: 'bg-[#0a84ff]' },
+  { id: 'notificaciones', label: 'Notificaciones', icon: Bell, color: 'bg-[#ff3b30]' },
+  { id: 'seguridad', label: 'Seguridad', icon: Lock, color: 'bg-[#636366]' },
+  { id: 'apariencia', label: 'Apariencia', icon: SunMoon, color: 'bg-[#5e5ce6]' },
+];
+
+function Group({ title, footer, children }: { title?: string; footer?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      {title && <h3 className="mb-2 pl-4 text-[13px] font-semibold text-ink">{title}</h3>}
+      <div className="surface divide-y divide-line overflow-hidden">{children}</div>
+      {footer && <p className="mt-2 px-4 text-[12px] text-ink-2">{footer}</p>}
+    </div>
+  );
+}
+
+function ToggleRow({ title, detail, checked, onChange }: { title: string; detail: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+      <div className="min-w-0">
+        <p className="text-[14px] text-ink">{title}</p>
+        <p className="text-[12px] text-ink-2">{detail}</p>
+      </div>
+      <Switch checked={checked} onChange={onChange} label={title} />
+    </div>
+  );
+}
+
+/** Miniature window used as a theme preview, like macOS Appearance settings. */
+function ThemePreview({ mode }: { mode: ThemeMode }) {
+  const pane = (dark: boolean) => (
+    <div className={cn('flex h-full flex-1 gap-1 p-1.5', dark ? 'bg-[#1c1c1e]' : 'bg-[#f5f5f7]')}>
+      <div className={cn('w-1/3 rounded-[4px]', dark ? 'bg-[#2c2c2e]' : 'bg-[#e5e5ea]')} />
+      <div className="flex flex-1 flex-col gap-1">
+        <div className={cn('h-2 w-3/4 rounded-full', dark ? 'bg-[#3a3a3c]' : 'bg-white')} />
+        <div className={cn('flex-1 rounded-[4px]', dark ? 'bg-[#2c2c2e]' : 'bg-white')} />
+        <div className="h-2 w-1/3 rounded-full bg-[#0a84ff]" />
+      </div>
+    </div>
+  );
+  return (
+    <div className="flex h-[76px] w-full overflow-hidden rounded-[10px] shadow-[0_0_0_0.5px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.08)]">
+      {mode === 'light' && pane(false)}
+      {mode === 'dark' && pane(true)}
+      {mode === 'system' && (
+        <>
+          {pane(false)}
+          {pane(true)}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
-  const { currentUser, theme, setTheme, addToast } = useStore();
-  const [activeSection, setActiveSection] = useState<'general' | 'perfil' | 'notificaciones' | 'seguridad' | 'apariencia'>('general');
+  const { currentUser, theme, setTheme, addToast, resetToDefaults } = useStore();
+  const [section, setSection] = useState<Section>('general');
+  const [resetOpen, setResetOpen] = useState(false);
 
-  // Form states
-  const [workspaceName, setWorkspaceName] = useState('Acme Corp • Producción');
-  const [userName, setUserName] = useState(currentUser.name);
-  const [userEmail, setUserEmail] = useState(currentUser.email);
-  const [userRole, setUserRole] = useState(currentUser.role);
+  const [workspaceName, setWorkspaceName] = useState('Acme Corp');
+  const [name, setName] = useState(currentUser.name);
+  const [email, setEmail] = useState(currentUser.email);
+  const [role, setRole] = useState(currentUser.role);
+  const [prefs, setPrefs] = useState({ tasks: true, mentions: true, deadlines: true, weekly: false });
 
-  const handleSave = (e: React.FormEvent) => {
+  const save = (e: React.FormEvent, what: string) => {
     e.preventDefault();
-    addToast({
-      title: 'Configuración guardada',
-      description: 'Tus preferencias han sido actualizadas en el espacio de trabajo.',
-      type: 'success',
-    });
+    addToast({ title: `${what} guardado`, type: 'success' });
   };
 
-  const navItems = [
-    { id: 'general', label: 'General', icon: Building },
-    { id: 'perfil', label: 'Perfil', icon: User },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
-    { id: 'seguridad', label: 'Seguridad', icon: Shield },
-    { id: 'apariencia', label: 'Apariencia', icon: Palette },
-  ] as const;
+  const setPref = (key: keyof typeof prefs) => (value: boolean) => setPrefs((p) => ({ ...p, [key]: value }));
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Editorial Header */}
-      <div className="pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
-        <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
-          Configuración
-        </h1>
-        <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
-          Administra tu espacio de trabajo, datos de perfil, seguridad y preferencias de interfaz.
-        </p>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader title="Configuración" subtitle="Tu espacio de trabajo, tu perfil y cómo se ve Nexora." />
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        {/* Sidebar Tabs */}
-        <div className="md:col-span-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = activeSection === item.id;
+      <div className="grid gap-6 md:grid-cols-[220px_1fr] md:gap-10">
+        {/* Section list */}
+        <nav aria-label="Secciones" className="no-scrollbar -mx-4 flex gap-1 overflow-x-auto px-4 md:mx-0 md:flex-col md:overflow-visible md:px-0">
+          {SECTIONS.map((s) => {
+            const Icon = s.icon;
+            const active = section === s.id;
             return (
               <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
+                key={s.id}
+                onClick={() => setSection(s.id)}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-xs font-medium text-left transition-all cursor-pointer',
-                  active
-                    ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                    : 'text-[#777169] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:text-[#a8a29e] dark:hover:bg-[#292524]'
+                  'relative flex shrink-0 items-center gap-3 rounded-[10px] py-1.5 pr-4 pl-1.5 text-left text-[14px] transition-colors',
+                  active ? 'font-medium text-white' : 'text-ink hover:bg-fill-2'
                 )}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                {active && <motion.span layoutId="settings-active" transition={spring} className="absolute inset-0 rounded-[10px] bg-accent" />}
+                <span className={cn('relative flex h-7 w-7 items-center justify-center rounded-[7px] text-white shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.1)]', s.color)}>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="relative">{s.label}</span>
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Section Content Area */}
-        <div className="md:col-span-9 p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
-          {/* General */}
-          {activeSection === 'general' && (
-            <form onSubmit={handleSave} className="space-y-6">
-              <div>
-                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Espacio de trabajo
-                </h3>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                  Información pública y configuración general de la organización.
-                </p>
-              </div>
-
-              <div className="space-y-4 max-w-lg">
-                <Input
-                  label="Nombre de la organización"
-                  value={workspaceName}
-                  onChange={(e) => setWorkspaceName(e.target.value)}
-                />
-                <Input
-                  label="Dominio corporativo"
-                  defaultValue="acmecorp.nexora.app"
-                  disabled
-                  helperText="El subdominio principal está vinculado al plan Enterprise."
-                />
-              </div>
-
-              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
-                <Button type="submit" variant="primary">
-                  Guardar cambios
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* Perfil */}
-          {activeSection === 'perfil' && (
-            <form onSubmit={handleSave} className="space-y-6">
-              <div>
-                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Perfil de usuario
-                </h3>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                  Actualiza tu información personal y cómo te ven tus compañeros.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 py-2">
-                <Avatar src={currentUser.avatar} name={currentUser.name} size="lg" />
-                <div>
-                  <Button type="button" variant="secondary" size="sm">
-                    Cambiar fotografía
-                  </Button>
-                  <p className="text-[11px] text-[#a8a29e] mt-1.5">
-                    Formatos admitidos: JPG, PNG o WebP hasta 2MB.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 max-w-lg">
-                <Input
-                  label="Nombre completo"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                />
-                <Input
-                  label="Correo electrónico"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                />
-                <Input
-                  label="Cargo o rol"
-                  value={userRole}
-                  onChange={(e) => setUserRole(e.target.value)}
-                />
-              </div>
-
-              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
-                <Button type="submit" variant="primary">
-                  Actualizar perfil
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* Notificaciones */}
-          {activeSection === 'notificaciones' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Preferencias de notificación
-                </h3>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                  Elige qué eventos activan alertas y correos informativos.
-                </p>
-              </div>
-
-              <div className="space-y-3 divide-y divide-[#e7e5e4]/60 dark:divide-[#2e2a27]">
-                {[
-                  {
-                    title: 'Asignación de tareas',
-                    desc: 'Notificar cuando se me asigne una nueva tarea en cualquier proyecto.',
-                    defaultChecked: true,
-                  },
-                  {
-                    title: 'Menciones en comentarios',
-                    desc: 'Notificar cuando un compañero mencione mi usuario en el hilo de una tarea.',
-                    defaultChecked: true,
-                  },
-                  {
-                    title: 'Vencimiento de plazos',
-                    desc: 'Recibir un aviso preventivo 24 horas antes del vencimiento de tareas.',
-                    defaultChecked: true,
-                  },
-                  {
-                    title: 'Resumen semanal por correo',
-                    desc: 'Envío automático los lunes con las métricas y progreso acumulado.',
-                    defaultChecked: false,
-                  },
-                ].map((item, idx) => (
-                  <label
-                    key={idx}
-                    className="flex items-start justify-between gap-4 pt-3 cursor-pointer select-none"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                        {item.desc}
-                      </p>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={section}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.3, ease: easeApple }}
+            className="min-w-0 space-y-7"
+          >
+            {section === 'general' && (
+              <>
+                <form onSubmit={(e) => save(e, 'Espacio de trabajo')} className="space-y-3">
+                  <Group title="Espacio de trabajo" footer="El dominio está ligado al plan Enterprise y no se puede cambiar desde aquí.">
+                    <div className="space-y-4 p-4 sm:p-5">
+                      <Input label="Nombre" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} />
+                      <Input label="Dominio" defaultValue="acmecorp.nexora.app" disabled />
                     </div>
-                    <input
-                      type="checkbox"
-                      defaultChecked={item.defaultChecked}
-                      className="mt-1 w-4 h-4 rounded border-[#d6d3d1] accent-[#292524] cursor-pointer"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+                  </Group>
+                  <div className="flex justify-end">
+                    <Button type="submit">Guardar</Button>
+                  </div>
+                </form>
 
-          {/* Seguridad */}
-          {activeSection === 'seguridad' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Seguridad y credenciales
-                </h3>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                  Protege el acceso a tu cuenta mediante autenticación segura.
-                </p>
-              </div>
+                <Group title="Datos de demostración" footer="Vuelve a los proyectos, tareas y actividad originales. Tus cambios se perderán.">
+                  <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+                    <p className="text-[14px] text-ink">Restaurar datos originales</p>
+                    <Button variant="danger" size="sm" onClick={() => setResetOpen(true)}>
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Restaurar
+                    </Button>
+                  </div>
+                </Group>
+              </>
+            )}
 
-              <div className="p-4 rounded-xl bg-[#fafafa] dark:bg-[#292524]/50 border border-[#e7e5e4] dark:border-[#44403c] space-y-2 max-w-lg">
-                <h4 className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Autenticación en dos pasos (2FA)
-                </h4>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e]">
-                  Añade una capa extra de protección solicitando un código temporal en cada inicio de sesión.
-                </p>
-                <div className="pt-2">
-                  <Button variant="secondary" size="sm">
-                    Configurar autenticador
-                  </Button>
+            {section === 'perfil' && (
+              <form onSubmit={(e) => save(e, 'Perfil')} className="space-y-3">
+                <div className="surface flex flex-col items-center p-6 text-center">
+                  <Avatar src={currentUser.avatar} name={name} size="xl" status={currentUser.status} />
+                  <p className="text-title-2 mt-3 text-ink">{name}</p>
+                  <p className="text-[13px] text-ink-2">{role}</p>
                 </div>
-              </div>
+                <Group title="Datos personales">
+                  <div className="space-y-4 p-4 sm:p-5">
+                    <Input label="Nombre completo" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+                    <Input label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                    <Input label="Cargo" value={role} onChange={(e) => setRole(e.target.value)} />
+                  </div>
+                </Group>
+                <div className="flex justify-end">
+                  <Button type="submit">Guardar perfil</Button>
+                </div>
+              </form>
+            )}
 
-              <div className="space-y-3 max-w-lg pt-2">
-                <Input type="password" label="Contraseña actual" />
-                <Input type="password" label="Nueva contraseña" />
-                <Input type="password" label="Confirmar nueva contraseña" />
-              </div>
+            {section === 'notificaciones' && (
+              <>
+                <Group title="Avisarme cuando…">
+                  <ToggleRow title="Me asignan una tarea" detail="En cualquier proyecto del espacio" checked={prefs.tasks} onChange={setPref('tasks')} />
+                  <ToggleRow title="Alguien me menciona" detail="En comentarios de tareas" checked={prefs.mentions} onChange={setPref('mentions')} />
+                  <ToggleRow title="Una tarea vence mañana" detail="Un aviso 24 horas antes" checked={prefs.deadlines} onChange={setPref('deadlines')} />
+                </Group>
+                <Group title="Correo" footer="Se envía los lunes a primera hora.">
+                  <ToggleRow title="Resumen semanal" detail="Avance de tus proyectos y lo que vence esa semana" checked={prefs.weekly} onChange={setPref('weekly')} />
+                </Group>
+              </>
+            )}
 
-              <div className="pt-4 border-t border-[#e7e5e4] dark:border-[#2e2a27]">
-                <Button variant="primary">Actualizar contraseña</Button>
-              </div>
-            </div>
-          )}
+            {section === 'seguridad' && (
+              <>
+                <Group title="Verificación en dos pasos" footer="Pide un código de tu app de autenticación en cada inicio de sesión.">
+                  <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+                    <div>
+                      <p className="text-[14px] text-ink">Estado</p>
+                      <p className="text-[12px] text-orange-ink">Desactivada</p>
+                    </div>
+                    <Button variant="tinted" size="sm">
+                      Activar
+                    </Button>
+                  </div>
+                </Group>
+                <form onSubmit={(e) => save(e, 'Contraseña')} className="space-y-3">
+                  <Group title="Cambiar contraseña">
+                    <div className="space-y-4 p-4 sm:p-5">
+                      <Input type="password" label="Contraseña actual" autoComplete="current-password" />
+                      <Input type="password" label="Nueva contraseña" autoComplete="new-password" helperText="Al menos 12 caracteres." />
+                      <Input type="password" label="Repite la nueva contraseña" autoComplete="new-password" />
+                    </div>
+                  </Group>
+                  <div className="flex justify-end">
+                    <Button type="submit">Cambiar contraseña</Button>
+                  </div>
+                </form>
+              </>
+            )}
 
-          {/* Apariencia */}
-          {activeSection === 'apariencia' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-editorial text-2xl font-light text-[#0c0a09] dark:text-[#f5f5f5]">
-                  Tema y modo visual
-                </h3>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5">
-                  Selecciona la apariencia preferida para tu sesión en Nexora.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg">
-                {[
-                  { id: 'light', label: 'Claro', icon: Sun },
-                  { id: 'dark', label: 'Oscuro', icon: Moon },
-                  { id: 'system', label: 'Sistema', icon: Laptop },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = theme === item.id;
-
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setTheme(item.id as 'light' | 'dark' | 'system')}
-                      className={cn(
-                        'flex flex-col items-center justify-center p-5 rounded-2xl border text-center transition-all cursor-pointer',
-                        isSelected
-                          ? 'border-[#292524] dark:border-[#f5f5f5] bg-[#fafafa] dark:bg-[#292524]'
-                          : 'border-[#e7e5e4] dark:border-[#44403c] bg-white dark:bg-[#1c1917] hover:border-[#a8a29e]'
-                      )}
-                    >
-                      <Icon className="w-5 h-5 mb-2 text-[#292524] dark:text-[#f5f5f5]" />
-                      <span className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                        {item.label}
-                      </span>
-                      {isSelected && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-[#292524] dark:text-[#f5f5f5] mt-1.5 font-medium">
-                          <Check className="w-3 h-3" /> Activo
+            {section === 'apariencia' && (
+              <Group title="Apariencia" footer="«Automático» sigue el modo claro u oscuro de tu dispositivo.">
+                <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-3 p-4 sm:gap-5 sm:p-6">
+                  {(
+                    [
+                      { id: 'light', label: 'Claro' },
+                      { id: 'dark', label: 'Oscuro' },
+                      { id: 'system', label: 'Automático' },
+                    ] as const
+                  ).map((opt) => {
+                    const selected = theme === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setTheme(opt.id)}
+                        className="group flex flex-col items-center gap-2.5"
+                      >
+                        <span
+                          className={cn(
+                            'relative block w-full rounded-[13px] p-[3px] transition-shadow duration-300',
+                            selected ? 'shadow-[0_0_0_3px_var(--accent)]' : 'group-hover:shadow-[0_0_0_3px_var(--fill-2)]'
+                          )}
+                        >
+                          <ThemePreview mode={opt.id} />
+                          <AnimatePresence>
+                            {selected && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                                transition={spring}
+                                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white ring-2 ring-card"
+                              >
+                                <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+                        <span className={cn('text-[13px]', selected ? 'font-semibold text-ink' : 'text-ink-2')}>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Group>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
+
+      <AlertDialog
+        isOpen={resetOpen}
+        title="¿Restaurar los datos originales?"
+        message="Se perderán los proyectos, tareas y comentarios que hayas creado o cambiado."
+        confirmLabel="Restaurar"
+        onCancel={() => setResetOpen(false)}
+        onConfirm={() => {
+          resetToDefaults();
+          setResetOpen(false);
+        }}
+      />
     </div>
   );
 }

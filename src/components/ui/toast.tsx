@@ -1,59 +1,69 @@
 'use client';
 
 import React from 'react';
-import { useStore } from '@/lib/store';
+import { AnimatePresence, motion } from 'motion/react';
 import { Check, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { springSoft } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
+const icons = {
+  success: { Icon: Check, cls: 'bg-[#30d158]' },
+  warning: { Icon: AlertTriangle, cls: 'bg-[#ff9f0a]' },
+  error: { Icon: AlertCircle, cls: 'bg-[#ff453a]' },
+  info: { Icon: Info, cls: 'bg-[#2997ff]' },
+};
+
+/**
+ * Feedback lives in a Dynamic Island: black capsules that grow out of the
+ * top-center of the screen and fold back when they are done.
+ */
 export function ToastContainer() {
   const { toasts, removeToast } = useStore();
 
-  if (toasts.length === 0) return null;
-
-  const icons = {
-    success: <div className="w-5 h-5 rounded-full bg-[#a7e5d3]/40 text-[#0c0a09] flex items-center justify-center shrink-0"><Check className="w-3 h-3" /></div>,
-    warning: <div className="w-5 h-5 rounded-full bg-[#f4c5a8]/40 text-[#0c0a09] flex items-center justify-center shrink-0"><AlertTriangle className="w-3 h-3" /></div>,
-    error: <div className="w-5 h-5 rounded-full bg-[#e8b8c4]/40 text-[#0c0a09] flex items-center justify-center shrink-0"><AlertCircle className="w-3 h-3" /></div>,
-    info: <div className="w-5 h-5 rounded-full bg-[#a8c8e8]/40 text-[#0c0a09] flex items-center justify-center shrink-0"><Info className="w-3 h-3" /></div>,
-  };
-
   return (
     <div
-      aria-live="assertive"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 top-[max(10px,env(safe-area-inset-top))] z-[90] flex flex-col items-center gap-2 px-3"
     >
-      {toasts.map((toast) => {
-        const type = toast.type || 'info';
-
-        return (
-          <div
-            key={toast.id}
-            className={cn(
-              'pointer-events-auto flex items-start gap-3 p-4 rounded-xl border bg-white dark:bg-[#1c1917] shadow-lg transition-all animate-in slide-in-from-bottom-2 duration-150 border-[#e7e5e4] dark:border-[#2e2a27]'
-            )}
-            role="alert"
-          >
-            {icons[type]}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-                {toast.title}
-              </h4>
-              {toast.description && (
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5 leading-relaxed">
-                  {toast.description}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="p-1 rounded-full text-[#a8a29e] hover:text-[#0c0a09] hover:bg-[#f0efed] dark:hover:text-white"
-              aria-label="Cerrar notificación"
+      <AnimatePresence initial={false}>
+        {toasts.map((toast) => {
+          const { Icon, cls } = icons[toast.type || 'info'];
+          return (
+            <motion.div
+              key={toast.id}
+              layout
+              role="status"
+              initial={{ opacity: 0, y: -18, scale: 0.4, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -14, scale: 0.6, filter: 'blur(6px)', transition: { duration: 0.28 } }}
+              transition={springSoft}
+              style={{ borderRadius: 26 }}
+              className="pointer-events-auto flex w-full max-w-[380px] items-center gap-3 bg-black py-2.5 pr-2.5 pl-2.5 text-white shadow-[0_18px_40px_-12px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
             >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        );
-      })}
+              <motion.span
+                initial={{ scale: 0, rotate: -40 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ ...springSoft, delay: 0.12 }}
+                className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white', cls)}
+              >
+                <Icon className="h-4 w-4" strokeWidth={2.6} />
+              </motion.span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] leading-tight font-semibold">{toast.title}</p>
+                {toast.description && <p className="mt-0.5 truncate text-[12px] leading-tight text-white/60">{toast.description}</p>}
+              </div>
+              <button
+                onClick={() => removeToast(toast.id)}
+                aria-label="Descartar aviso"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2.4} />
+              </button>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }

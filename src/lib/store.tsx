@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   Project,
   Task,
@@ -10,6 +10,7 @@ import {
   Priority,
   ProjectStatus,
   TaskStatus,
+  Milestone,
 } from './types';
 import {
   initialProjects,
@@ -19,12 +20,20 @@ import {
   mockUsers,
   currentUser,
 } from './mock-data';
+import { getTaskStatusMeta } from './utils';
 
 export interface ToastMessage {
   id: string;
   title: string;
   description?: string;
   type?: 'success' | 'error' | 'info' | 'warning';
+}
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export interface CreateTaskDefaults {
+  projectId?: string;
+  status?: TaskStatus;
 }
 
 interface StoreContextType {
@@ -34,13 +43,13 @@ interface StoreContextType {
   notifications: NotificationItem[];
   users: User[];
   currentUser: User;
-  theme: 'light' | 'dark' | 'system';
+  theme: ThemeMode;
   toasts: ToastMessage[];
   isCommandPaletteOpen: boolean;
   isCreateProjectOpen: boolean;
   isCreateTaskOpen: boolean;
+  createTaskDefaults: CreateTaskDefaults;
   selectedTaskId: string | null;
-  // Actions
   addProject: (data: {
     name: string;
     description: string;
@@ -55,6 +64,8 @@ interface StoreContextType {
   updateProject: (id: string, partial: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   archiveProject: (id: string) => void;
+  toggleMilestone: (projectId: string, milestoneId: string) => void;
+  addMilestone: (projectId: string, data: { title: string; date: string }) => void;
   addTask: (data: {
     title: string;
     description: string;
@@ -63,7 +74,7 @@ interface StoreContextType {
     priority: Priority;
     dueDate: string;
     status: TaskStatus;
-  }) => Task;
+  }) => Task | null;
   updateTask: (id: string, partial: Partial<Task>) => void;
   toggleTaskComplete: (id: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
@@ -71,12 +82,12 @@ interface StoreContextType {
   addCommentToTask: (taskId: string, content: string) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setTheme: (theme: ThemeMode) => void;
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
   setIsCommandPaletteOpen: (open: boolean) => void;
   setIsCreateProjectOpen: (open: boolean) => void;
-  setIsCreateTaskOpen: (open: boolean) => void;
+  setIsCreateTaskOpen: (open: boolean, defaults?: CreateTaskDefaults) => void;
   setSelectedTaskId: (id: string | null) => void;
   resetToDefaults: () => void;
 }
@@ -85,131 +96,157 @@ const StoreContext = createContext<StoreContextType | null>(null);
 
 const STORAGE_KEY_PREFIX = 'nexora_saas_';
 
-export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
+let globalIdCounter = 1000;
+export function createId(prefix: string): string {
+  globalIdCounter += 1;
+  return `${prefix}-${Date.now()}-${globalIdCounter}`;
+}
 
+function progressFor(projectId: string, allTasks: Task[]): number | null {
+  const own = allTasks.filter((t) => t.projectId === projectId);
+  if (own.length === 0) return null;
+  return Math.round((own.filter((t) => t.completed).length / own.length) * 100);
+}
+
+function readStorage<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${key}`);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: unknown) {
+  try {
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, typeof value === 'string' ? value : JSON.stringify(value));
+  } catch {
+    // Storage full or blocked — the session keeps working in memory.
+  }
+}
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activities, setActivities] = useState<ActivityEvent[]>(initialActivities);
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [users] = useState<User[]>(mockUsers);
-  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>('light');
+  const [theme, setThemeState] = useState<ThemeMode>('light');
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isCreateTaskOpen, setCreateTaskOpenState] = useState(false);
+  const [createTaskDefaults, setCreateTaskDefaults] = useState<CreateTaskDefaults>({});
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Load from localStorage on client mount
+  const [hydrated, setHydrated] = useState(false);
+  const toastTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  // Restore the persisted workspace once on the client.
   useEffect(() => {
-    setIsClient(true);
+    /* eslint-disable react-hooks/set-state-in-effect */
+    const savedProjects = readStorage<Project[]>('projects');
+    if (savedProjects) setProjects(savedProjects);
+    const savedTasks = readStorage<Task[]>('tasks');
+    if (savedTasks) setTasks(savedTasks);
+    const savedActivities = readStorage<ActivityEvent[]>('activities');
+    if (savedActivities) setActivities(savedActivities);
+    const savedNotifications = readStorage<NotificationItem[]>('notifications');
+    if (savedNotifications) setNotifications(savedNotifications);
     try {
-      const savedProjects = localStorage.getItem(`${STORAGE_KEY_PREFIX}projects`);
-      if (savedProjects) setProjects(JSON.parse(savedProjects));
-
-      const savedTasks = localStorage.getItem(`${STORAGE_KEY_PREFIX}tasks`);
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-
-      const savedActivities = localStorage.getItem(`${STORAGE_KEY_PREFIX}activities`);
-      if (savedActivities) setActivities(JSON.parse(savedActivities));
-
-      const savedNotifications = localStorage.getItem(`${STORAGE_KEY_PREFIX}notifications`);
-      if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
-
-      const savedTheme = localStorage.getItem(`${STORAGE_KEY_PREFIX}theme`) as 'light' | 'dark' | 'system' | null;
-      if (savedTheme) {
-        setThemeState(savedTheme);
-      }
-    } catch {
-      // Fallback to defaults if parsing fails
-    }
+      const savedTheme = localStorage.getItem(`${STORAGE_KEY_PREFIX}theme`) as ThemeMode | null;
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') setThemeState(savedTheme);
+    } catch {}
+    setHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
-  // Save to localStorage when changed
   useEffect(() => {
-    if (!isClient) return;
-    try {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}projects`, JSON.stringify(projects));
-    } catch {}
-  }, [projects, isClient]);
+    if (hydrated) writeStorage('projects', projects);
+  }, [projects, hydrated]);
+  useEffect(() => {
+    if (hydrated) writeStorage('tasks', tasks);
+  }, [tasks, hydrated]);
+  useEffect(() => {
+    if (hydrated) writeStorage('activities', activities);
+  }, [activities, hydrated]);
+  useEffect(() => {
+    if (hydrated) writeStorage('notifications', notifications);
+  }, [notifications, hydrated]);
 
+  // Keep the <html> class in sync with the chosen theme (and with the OS when set to "system").
   useEffect(() => {
-    if (!isClient) return;
-    try {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}tasks`, JSON.stringify(tasks));
-    } catch {}
-  }, [tasks, isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    try {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}activities`, JSON.stringify(activities));
-    } catch {}
-  }, [activities, isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    try {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}notifications`, JSON.stringify(notifications));
-    } catch {}
-  }, [notifications, isClient]);
-
-  // Handle dark mode DOM sync
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     const root = document.documentElement;
-    const isDark =
-      theme === 'dark' ||
-      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const dark = theme === 'dark' || (theme === 'system' && media.matches);
+      root.classList.toggle('dark', dark);
+    };
+    apply();
+    if (theme !== 'system') return;
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
   }, [theme]);
 
-  const setTheme = (newTheme: 'light' | 'dark' | 'system') => {
-    setThemeState(newTheme);
-    try {
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}theme`, newTheme);
-    } catch {}
+  useEffect(() => {
+    const timers = toastTimers.current;
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, []);
+
+  const setTheme = (next: ThemeMode) => {
+    setThemeState(next);
+    writeStorage('theme', next);
   };
 
-  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const newToast: ToastMessage = { ...toast, id, type: toast.type || 'info' };
-    setToasts((prev) => [...prev, newToast]);
-
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  };
-
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+    const timer = toastTimers.current.get(id);
+    if (timer) clearTimeout(timer);
+    toastTimers.current.delete(id);
+  }, []);
+
+  const addToast = useCallback(
+    (toast: Omit<ToastMessage, 'id'>) => {
+      const id = createId('toast');
+      setToasts((prev) => [...prev.slice(-2), { ...toast, id, type: toast.type || 'info' }]);
+      toastTimers.current.set(id, setTimeout(() => removeToast(id), 4200));
+    },
+    [removeToast]
+  );
+
+  const logActivity = (event: Omit<ActivityEvent, 'id' | 'user' | 'timestamp' | 'timeAgo'>) => {
+    setActivities((prev) => [
+      {
+        ...event,
+        id: createId('act'),
+        user: currentUser,
+        timestamp: new Date().toISOString(),
+        timeAgo: 'Justo ahora',
+      },
+      ...prev,
+    ]);
   };
 
-  const addProject = (data: {
-    name: string;
-    description: string;
-    clientOrArea: string;
-    managerId: string;
-    teamIds: string[];
-    priority: Priority;
-    startDate: string;
-    dueDate: string;
-    status: ProjectStatus;
-  }) => {
+  /** Commits a new task list and recomputes progress for the touched projects. */
+  const commitTasks = (next: Task[], touchedProjectIds: string[]) => {
+    setTasks(next);
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (!touchedProjectIds.includes(p.id)) return p;
+        const progress = progressFor(p.id, next);
+        return progress === null ? p : { ...p, progress };
+      })
+    );
+  };
+
+  const addProject: StoreContextType['addProject'] = (data) => {
     const manager = users.find((u) => u.id === data.managerId) || currentUser;
     const team = users.filter((u) => data.teamIds.includes(u.id));
-    if (!team.some((u) => u.id === manager.id)) {
-      team.push(manager);
-    }
+    if (!team.some((u) => u.id === manager.id)) team.unshift(manager);
 
     const newProject: Project = {
-      id: `proj-${Date.now()}`,
+      id: createId('proj'),
       name: data.name,
       description: data.description,
       clientOrArea: data.clientOrArea || 'General',
@@ -221,102 +258,78 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dueDate: data.dueDate,
       status: data.status,
       milestones: [
-        {
-          id: `m-${Date.now()}-1`,
-          title: 'Inicio y alineación de requerimientos',
-          date: data.startDate,
-          completed: true,
-        },
-        {
-          id: `m-${Date.now()}-2`,
-          title: 'Entrega final y puesta en marcha',
-          date: data.dueDate,
-          completed: false,
-        },
+        { id: createId('m'), title: 'Arranque y acuerdos de alcance', date: data.startDate, completed: true },
+        { id: createId('m'), title: 'Entrega final', date: data.dueDate, completed: false },
       ],
       createdAt: new Date().toISOString(),
     };
 
     setProjects((prev) => [newProject, ...prev]);
-
-    // Record activity
-    const newActivity: ActivityEvent = {
-      id: `act-${Date.now()}`,
-      user: currentUser,
-      action: 'creó el proyecto',
-      entity: newProject.name,
-      entityType: 'project',
-      timestamp: new Date().toISOString(),
-      timeAgo: 'Justo ahora',
-      projectId: newProject.id,
-    };
-    setActivities((prev) => [newActivity, ...prev]);
-
-    addToast({
-      title: 'Proyecto creado exitosamente',
-      description: `"${newProject.name}" ya está disponible en el workspace.`,
-      type: 'success',
-    });
-
+    logActivity({ action: 'creó el proyecto', entity: newProject.name, entityType: 'project', projectId: newProject.id });
+    addToast({ title: 'Proyecto creado', description: newProject.name, type: 'success' });
     return newProject;
   };
 
   const updateProject = (id: string, partial: Partial<Project>) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const updated = { ...p, ...partial };
-          return updated;
-        }
-        return p;
-      })
-    );
-    addToast({
-      title: 'Proyecto actualizado',
-      description: 'Los cambios se han guardado correctamente.',
-      type: 'info',
-    });
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...partial } : p)));
+    addToast({ title: 'Cambios guardados', description: partial.name ?? undefined, type: 'success' });
   };
 
   const deleteProject = (id: string) => {
-    const projectToDelete = projects.find((p) => p.id === id);
+    const target = projects.find((p) => p.id === id);
     setProjects((prev) => prev.filter((p) => p.id !== id));
     setTasks((prev) => prev.filter((t) => t.projectId !== id));
-
-    if (projectToDelete) {
+    if (target) {
       addToast({
         title: 'Proyecto eliminado',
-        description: `Se eliminó "${projectToDelete.name}" y sus tareas vinculadas.`,
+        description: `${target.name} y sus tareas`,
         type: 'warning',
       });
     }
   };
 
   const archiveProject = (id: string) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'archivado' as ProjectStatus } : p))
-    );
-    addToast({
-      title: 'Proyecto archivado',
-      description: 'El proyecto fue movido al archivo histórico.',
-      type: 'info',
-    });
+    const target = projects.find((p) => p.id === id);
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'archivado' } : p)));
+    addToast({ title: 'Proyecto archivado', description: target?.name, type: 'info' });
   };
 
-  const addTask = (data: {
-    title: string;
-    description: string;
-    projectId: string;
-    assigneeId: string;
-    priority: Priority;
-    dueDate: string;
-    status: TaskStatus;
-  }) => {
+  const toggleMilestone = (projectId: string, milestoneId: string) => {
+    const project = projects.find((p) => p.id === projectId);
+    const milestone = project?.milestones.find((m) => m.id === milestoneId);
+    if (!project || !milestone) return;
+    const completed = !milestone.completed;
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, milestones: p.milestones.map((m) => (m.id === milestoneId ? { ...m, completed } : m)) }
+          : p
+      )
+    );
+    if (completed) {
+      logActivity({ action: 'cumplió el hito', entity: milestone.title, entityType: 'project', projectId });
+    }
+  };
+
+  const addMilestone = (projectId: string, data: { title: string; date: string }) => {
+    const milestone: Milestone = { id: createId('m'), title: data.title, date: data.date, completed: false };
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, milestones: [...p.milestones, milestone].sort((a, b) => a.date.localeCompare(b.date)) }
+          : p
+      )
+    );
+    addToast({ title: 'Hito añadido', description: data.title, type: 'success' });
+  };
+
+  const addTask: StoreContextType['addTask'] = (data) => {
     const project = projects.find((p) => p.id === data.projectId) || projects[0];
+    if (!project) return null;
     const assignee = users.find((u) => u.id === data.assigneeId) || currentUser;
 
     const newTask: Task = {
-      id: `tsk-${Date.now()}`,
+      id: createId('tsk'),
       projectId: project.id,
       projectName: project.name,
       title: data.title,
@@ -331,189 +344,94 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
-    setTasks((prev) => [newTask, ...prev]);
-
-    // Recalculate project progress
-    updateProjectProgress(project.id, newTask, 'add');
-
-    // Record activity
-    const newActivity: ActivityEvent = {
-      id: `act-${Date.now()}`,
-      user: currentUser,
-      action: 'creó la tarea',
-      entity: newTask.title,
-      entityType: 'task',
-      timestamp: new Date().toISOString(),
-      timeAgo: 'Justo ahora',
-      projectId: project.id,
-    };
-    setActivities((prev) => [newActivity, ...prev]);
-
-    addToast({
-      title: 'Tarea creada',
-      description: `Asignada a ${assignee.name}.`,
-      type: 'success',
-    });
-
+    commitTasks([newTask, ...tasks], [project.id]);
+    logActivity({ action: 'creó la tarea', entity: newTask.title, entityType: 'task', projectId: project.id });
+    addToast({ title: 'Tarea creada', description: `En ${project.name}`, type: 'success' });
     return newTask;
   };
 
-  const updateProjectProgress = (projectId: string, _task: Task, _mode: string) => {
-    // Dynamically calculate progress based on all project tasks
-    setTimeout(() => {
-      setTasks((currentTasks) => {
-        const projTasks = currentTasks.filter((t) => t.projectId === projectId);
-        if (projTasks.length === 0) return currentTasks;
-        const completed = projTasks.filter((t) => t.status === 'completada').length;
-        const newProgress = Math.round((completed / projTasks.length) * 100);
-
-        setProjects((prevProj) =>
-          prevProj.map((p) => (p.id === projectId ? { ...p, progress: newProgress } : p))
-        );
-        return currentTasks;
-      });
-    }, 0);
-  };
-
   const updateTask = (id: string, partial: Partial<Task>) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const updated = { ...t, ...partial };
-          if (partial.status) {
-            updated.completed = partial.status === 'completada';
-          }
-          return updated;
-        }
-        return t;
-      })
-    );
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const next = tasks.map((t) => {
+      if (t.id !== id) return t;
+      const updated = { ...t, ...partial };
+      if (partial.status) updated.completed = partial.status === 'completada';
+      return updated;
+    });
+    commitTasks(next, [target.projectId]);
   };
 
   const toggleTaskComplete = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const willBeCompleted = !t.completed;
-          const newStatus: TaskStatus = willBeCompleted ? 'completada' : 'en_progreso';
-          const updated = { ...t, completed: willBeCompleted, status: newStatus };
-
-          addToast({
-            title: willBeCompleted ? 'Tarea completada 🎉' : 'Tarea reabierta',
-            description: `"${t.title}" marcada como ${newStatus}.`,
-            type: willBeCompleted ? 'success' : 'info',
-          });
-
-          // Activity
-          setActivities((acts) => [
-            {
-              id: `act-${Date.now()}`,
-              user: currentUser,
-              action: willBeCompleted ? 'marcó como completada' : 'reabrió la tarea',
-              entity: t.title,
-              entityType: 'task',
-              timestamp: new Date().toISOString(),
-              timeAgo: 'Justo ahora',
-              projectId: t.projectId,
-            },
-            ...acts,
-          ]);
-
-          // Recalculate project progress
-          setTimeout(() => {
-            setTasks((freshTasks) => {
-              const projTasks = freshTasks.filter((task) => task.projectId === t.projectId);
-              if (projTasks.length > 0) {
-                const comp = projTasks.filter((task) => task.completed).length;
-                const pct = Math.round((comp / projTasks.length) * 100);
-                setProjects((ps) =>
-                  ps.map((p) => (p.id === t.projectId ? { ...p, progress: pct } : p))
-                );
-              }
-              return freshTasks;
-            });
-          }, 50);
-
-          return updated;
-        }
-        return t;
-      })
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const completed = !target.completed;
+    const status: TaskStatus = completed ? 'completada' : 'en_progreso';
+    commitTasks(
+      tasks.map((t) => (t.id === id ? { ...t, completed, status } : t)),
+      [target.projectId]
     );
+    logActivity({
+      action: completed ? 'completó la tarea' : 'reabrió la tarea',
+      entity: target.title,
+      entityType: 'task',
+      projectId: target.projectId,
+    });
+    addToast({
+      title: completed ? 'Tarea completada' : 'Tarea reabierta',
+      description: target.title,
+      type: completed ? 'success' : 'info',
+    });
   };
 
-  const updateTaskStatus = (id: string, newStatus: TaskStatus) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const isCompleted = newStatus === 'completada';
-          const updated = { ...t, status: newStatus, completed: isCompleted };
-
-          addToast({
-            title: 'Estado actualizado',
-            description: `Tarea movida a "${newStatus.replace('_', ' ')}".`,
-            type: 'info',
-          });
-
-          return updated;
-        }
-        return t;
-      })
+  const updateTaskStatus = (id: string, status: TaskStatus) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target || target.status === status) return;
+    commitTasks(
+      tasks.map((t) => (t.id === id ? { ...t, status, completed: status === 'completada' } : t)),
+      [target.projectId]
     );
+    addToast({
+      title: `Movida a ${getTaskStatusMeta(status).label.toLowerCase()}`,
+      description: target.title,
+      type: status === 'completada' ? 'success' : 'info',
+    });
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const updatedSubtasks = t.subtasks.map((st) =>
-            st.id === subtaskId ? { ...st, completed: !st.completed } : st
-          );
-          return { ...t, subtasks: updatedSubtasks };
-        }
-        return t;
-      })
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s)) }
+          : t
+      )
     );
   };
 
   const addCommentToTask = (taskId: string, content: string) => {
-    if (!content.trim()) return;
-
-    const newComment = {
-      id: `comm-${Date.now()}`,
+    const text = content.trim();
+    if (!text) return;
+    const comment = {
+      id: createId('comm'),
       taskId,
       author: currentUser,
-      content: content.trim(),
+      content: text,
       createdAt: new Date().toISOString(),
     };
-
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          return { ...t, comments: [...t.comments, newComment] };
-        }
-        return t;
-      })
-    );
-
-    addToast({
-      title: 'Comentario añadido',
-      type: 'info',
-    });
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, comments: [...t.comments, comment] } : t)));
   };
 
   const markNotificationAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
   const markAllNotificationsAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    addToast({
-      title: 'Notificaciones leídas',
-      description: 'Todas las notificaciones fueron marcadas como leídas.',
-      type: 'info',
-    });
+  };
+
+  const setIsCreateTaskOpen = (open: boolean, defaults: CreateTaskDefaults = {}) => {
+    if (open) setCreateTaskDefaults(defaults);
+    setCreateTaskOpenState(open);
   };
 
   const resetToDefaults = () => {
@@ -521,12 +439,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTasks(initialTasks);
     setActivities(initialActivities);
     setNotifications(initialNotifications);
-    localStorage.clear();
-    addToast({
-      title: 'Datos restaurados',
-      description: 'Se han restablecido los datos mock de fábrica.',
-      type: 'info',
-    });
+    try {
+      ['projects', 'tasks', 'activities', 'notifications'].forEach((k) =>
+        localStorage.removeItem(`${STORAGE_KEY_PREFIX}${k}`)
+      );
+    } catch {}
+    addToast({ title: 'Datos de demostración restaurados', type: 'info' });
   };
 
   return (
@@ -543,11 +461,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         isCommandPaletteOpen,
         isCreateProjectOpen,
         isCreateTaskOpen,
+        createTaskDefaults,
         selectedTaskId,
         addProject,
         updateProject,
         deleteProject,
         archiveProject,
+        toggleMilestone,
+        addMilestone,
         addTask,
         updateTask,
         toggleTaskComplete,

@@ -1,106 +1,118 @@
 'use client';
 
 import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { FolderClosed, CircleCheck, UsersRound, Cog, History } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { PageHeader, EmptyState } from '@/components/layout/page-header';
 import { Avatar } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
-import {
-  Activity,
-  FolderKanban,
-  CheckSquare,
-  Users,
-  Settings,
-  Clock,
-} from 'lucide-react';
+import { Segmented } from '@/components/ui/segmented';
+import { Stagger, StaggerItem } from '@/components/ui/reveal';
+import { easeApple } from '@/lib/motion';
+import { cn, daysUntil, firstName, formatLongDate, REFERENCE_DATE } from '@/lib/utils';
+import type { ActivityEvent } from '@/lib/types';
+
+type Filter = 'todos' | 'project' | 'task' | 'team';
+
+const kindMeta: Record<ActivityEvent['entityType'], { icon: React.ComponentType<{ className?: string }>; cls: string }> = {
+  project: { icon: FolderClosed, cls: 'bg-accent' },
+  task: { icon: CircleCheck, cls: 'bg-green' },
+  team: { icon: UsersRound, cls: 'bg-purple' },
+  system: { icon: Cog, cls: 'bg-gray' },
+};
+
+function dayLabel(timestamp: string): string {
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return 'Anteriores';
+  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const diff = daysUntil(iso, REFERENCE_DATE);
+  if (diff >= 0) return 'Hoy';
+  if (diff === -1) return 'Ayer';
+  const label = formatLongDate(d);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 export default function ActivityPage() {
   const { activities } = useStore();
-  const [filter, setFilter] = useState<'todos' | 'proyectos' | 'tareas' | 'equipo' | 'sistema'>('todos');
+  const [filter, setFilter] = useState<Filter>('todos');
 
-  const filteredActivities = activities.filter((act) => {
-    if (filter === 'todos') return true;
-    if (filter === 'proyectos') return act.entityType === 'project';
-    if (filter === 'tareas') return act.entityType === 'task';
-    if (filter === 'equipo') return act.entityType === 'team';
-    if (filter === 'sistema') return act.entityType === 'system';
-    return true;
+  const visible = activities.filter((a) => filter === 'todos' || a.entityType === filter);
+  const groups: { label: string; items: ActivityEvent[] }[] = [];
+  visible.forEach((a) => {
+    const label = dayLabel(a.timestamp);
+    const group = groups.find((g) => g.label === label);
+    if (group) group.items.push(a);
+    else groups.push({ label, items: [a] });
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Editorial Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-2 border-b border-[#e7e5e4]/80 dark:border-[#2e2a27]">
-        <div>
-          <h1 className="font-editorial text-4xl sm:text-5xl font-light tracking-tight text-[#0c0a09] dark:text-[#f5f5f5]">
-            Registro de Actividad
-          </h1>
-          <p className="text-sm text-[#777169] dark:text-[#a8a29e] mt-1">
-            Historial cronológico de cambios, creaciones y auditoría en toda la organización.
-          </p>
-        </div>
+    <div className="space-y-6 sm:space-y-7">
+      <PageHeader
+        title="Actividad"
+        subtitle="Cada cambio en proyectos y tareas, en orden."
+        actions={
+          <Segmented
+            label="Filtrar actividad"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: 'todos', label: 'Todo' },
+              { value: 'project', label: 'Proyectos' },
+              { value: 'task', label: 'Tareas' },
+              { value: 'team', label: 'Equipo' },
+            ]}
+          />
+        }
+      />
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center p-1 rounded-full bg-[#f0efed] dark:bg-[#292524] self-start sm:self-auto">
-          {(
-            [
-              { id: 'todos', label: 'Todos' },
-              { id: 'proyectos', label: 'Proyectos' },
-              { id: 'tareas', label: 'Tareas' },
-              { id: 'equipo', label: 'Equipo' },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={cn(
-                'px-3.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer',
-                filter === tab.id
-                  ? 'bg-[#292524] text-white dark:bg-[#f5f5f5] dark:text-[#0c0a09] shadow-xs'
-                  : 'text-[#777169] hover:text-[#0c0a09]'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Activity Timeline Card */}
-      <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] shadow-none">
-        <div className="space-y-6 relative before:absolute before:left-4 before:top-3 before:bottom-3 before:w-px before:bg-[#e7e5e4] dark:before:bg-[#2e2a27]">
-          {filteredActivities.map((event) => (
-            <div key={event.id} className="flex items-start gap-4 relative pl-1 group">
-              <Avatar
-                src={event.user.avatar}
-                name={event.user.name}
-                size="sm"
-                className="ring-4 ring-white dark:ring-[#1c1917] z-10 shrink-0"
-              />
-
-              <div className="flex-1 min-w-0 p-4 rounded-xl border border-transparent group-hover:border-[#e7e5e4] dark:group-hover:border-[#2e2a27] group-hover:bg-[#fafafa] dark:group-hover:bg-[#292524]/40 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <p className="text-xs text-[#292524] dark:text-[#f5f5f5] leading-relaxed">
-                    <span className="font-semibold text-[#0c0a09] dark:text-white">
-                      {event.user.name}
-                    </span>{' '}
-                    <span className="text-[#777169] dark:text-[#a8a29e]">{event.action}</span>{' '}
-                    <span className="font-medium text-[#0c0a09] dark:text-white">
-                      &ldquo;{event.entity}&rdquo;
-                    </span>
-                  </p>
-                  <span className="text-[11px] text-[#a8a29e] shrink-0">
-                    {event.timeAgo}
-                  </span>
-                </div>
-
-                <span className="inline-block mt-2 text-[10px] px-2.5 py-0.5 rounded-full bg-[#f0efed] dark:bg-[#292524] text-[#777169] dark:text-[#a8a29e] font-medium capitalize">
-                  {event.entityType || 'General'}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={filter}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: easeApple }}
+          className="space-y-8"
+        >
+          {groups.length === 0 ? (
+            <EmptyState icon={History} title="Sin movimientos" description="Cuando alguien cambie algo en esta categoría aparecerá aquí." />
+          ) : (
+            groups.map((g) => (
+              <section key={g.label}>
+                <h2 className="text-title-2 glass sticky top-[56px] z-10 -mx-4 mb-3 bg-canvas/80 px-4 py-2 text-ink sm:-mx-8 sm:px-8">{g.label}</h2>
+                <Stagger as="ol" className="surface divide-y divide-line overflow-hidden">
+                  {g.items.map((a) => {
+                    const kind = kindMeta[a.entityType] ?? kindMeta.system;
+                    const Icon = kind.icon;
+                    return (
+                      <StaggerItem as="li" key={a.id} className="flex items-start gap-4 px-4 py-4 sm:px-6">
+                        <div className="relative shrink-0">
+                          <Avatar src={a.user.avatar} name={a.user.name} size="md" />
+                          <span
+                            className={cn(
+                              'absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full text-white ring-2 ring-card',
+                              kind.cls
+                            )}
+                          >
+                            <Icon className="h-3 w-3" />
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="text-[14px] leading-snug text-ink-2">
+                            <span className="font-medium text-ink">{firstName(a.user.name)}</span> {a.action}{' '}
+                            <span className="font-medium text-ink">{a.entity}</span>
+                          </p>
+                          <p className="mt-1 text-[12px] text-ink-3">{a.timeAgo}</p>
+                        </div>
+                      </StaggerItem>
+                    );
+                  })}
+                </Stagger>
+              </section>
+            ))
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

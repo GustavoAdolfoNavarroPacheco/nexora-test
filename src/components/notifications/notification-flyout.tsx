@@ -1,125 +1,118 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { useStore } from '@/lib/store';
-import { Check, CheckCheck, Clock, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
+import { UserRound, CalendarDays, CircleCheck, AtSign, TriangleAlert, BellOff } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { spring, easeApple } from '@/lib/motion';
+import { cn } from '@/lib/utils';
+import type { NotificationItem } from '@/lib/types';
 
-interface NotificationFlyoutProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+const typeMeta: Record<NotificationItem['type'], { icon: React.ComponentType<{ className?: string }>; cls: string }> = {
+  assignment: { icon: UserRound, cls: 'bg-accent' },
+  deadline: { icon: CalendarDays, cls: 'bg-orange' },
+  completion: { icon: CircleCheck, cls: 'bg-green' },
+  mention: { icon: AtSign, cls: 'bg-purple' },
+  alert: { icon: TriangleAlert, cls: 'bg-red' },
+};
 
-export function NotificationFlyout({ isOpen, onClose }: NotificationFlyoutProps) {
+/** Notification Center-style popover anchored under the bell. */
+export function NotificationFlyout({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useStore();
-  const flyoutRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (flyoutRef.current && !flyoutRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <div
-      ref={flyoutRef}
-      className="absolute right-0 top-12 w-80 sm:w-96 bg-white dark:bg-[#1c1917] border border-[#e7e5e4] dark:border-[#2e2a27] rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#e7e5e4] dark:border-[#2e2a27]">
-        <div className="flex items-center gap-2">
-          <h4 className="text-xs font-semibold text-[#0c0a09] dark:text-[#f5f5f5]">
-            Notificaciones
-          </h4>
-          {unreadCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f0efed] dark:bg-[#292524] text-[#292524] dark:text-[#f5f5f5]">
-              {unreadCount} nuevas
-            </span>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.15 } }}
+          transition={spring}
+          style={{ transformOrigin: 'top right' }}
+          className={cn(
+            'glass z-50 overflow-hidden rounded-[22px] bg-elevated shadow-pop',
+            'max-sm:fixed max-sm:inset-x-3 max-sm:top-[62px]',
+            'sm:absolute sm:top-[calc(100%+10px)] sm:right-0 sm:w-[380px]'
           )}
-        </div>
-
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllNotificationsAsRead}
-            className="flex items-center gap-1 text-[11px] text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white font-medium cursor-pointer"
-          >
-            <CheckCheck className="w-3.5 h-3.5" />
-            Marcar leídas
-          </button>
-        )}
-      </div>
-
-      {/* List */}
-      <div className="max-h-[380px] overflow-y-auto divide-y divide-[#e7e5e4]/60 dark:divide-[#2e2a27]">
-        {notifications.length === 0 ? (
-          <div className="p-8 text-center text-xs text-[#a8a29e]">
-            No tienes notificaciones pendientes.
-          </div>
-        ) : (
-          notifications.map((notif) => (
-            <div
-              key={notif.id}
-              onClick={() => markNotificationAsRead(notif.id)}
-              className={cn(
-                'p-4 flex items-start gap-3 transition-colors cursor-pointer',
-                !notif.read
-                  ? 'bg-[#fafafa] dark:bg-[#292524]/40'
-                  : 'hover:bg-[#fafafa] dark:hover:bg-[#292524]/20'
-              )}
-            >
-              <div
-                className={cn(
-                  'w-2 h-2 rounded-full mt-1.5 shrink-0',
-                  !notif.read ? 'bg-[#0c0a09] dark:bg-[#a7e5d3]' : 'bg-transparent'
-                )}
-              />
-
-              <div className="flex-1 min-w-0">
-                <p
-                  className={cn(
-                    'text-xs font-semibold',
-                    !notif.read ? 'text-[#0c0a09] dark:text-white' : 'text-[#4e4e4e] dark:text-[#a8a29e]'
-                  )}
-                >
-                  {notif.title}
-                </p>
-                <p className="text-xs text-[#777169] dark:text-[#a8a29e] mt-0.5 leading-snug">
-                  {notif.description}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-[10px] text-[#a8a29e]">
-                  <Clock className="w-3 h-3" />
-                  <span>{notif.timeAgo}</span>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-3 bg-[#fafafa] dark:bg-[#1c1917] border-t border-[#e7e5e4] dark:border-[#2e2a27] text-center">
-        <Link
-          href="/actividad"
-          onClick={onClose}
-          className="text-xs font-medium text-[#777169] hover:text-[#0c0a09] dark:text-[#a8a29e] dark:hover:text-white"
         >
-          Ver todo el historial de auditoría →
-        </Link>
-      </div>
-    </div>
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <div>
+              <h2 className="text-headline text-ink">Notificaciones</h2>
+              <p className="text-caption text-ink-2">{unread > 0 ? `${unread} sin leer` : 'Todo al día'}</p>
+            </div>
+            {unread > 0 && (
+              <button
+                onClick={markAllNotificationsAsRead}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium text-accent-ink transition-colors hover:bg-accent-soft"
+              >
+                Marcar todas como leídas
+              </button>
+            )}
+          </div>
+
+          <div data-lenis-prevent className="max-h-[min(440px,70vh)] space-y-1.5 overflow-y-auto overscroll-contain p-2.5 pt-1">
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center py-10 text-center text-ink-3">
+                <BellOff className="mb-2 h-6 w-6" />
+                <p className="text-footnote">No hay notificaciones.</p>
+              </div>
+            ) : (
+              notifications.map((n, i) => {
+                const meta = typeMeta[n.type];
+                const Icon = meta.icon;
+                const body = (
+                  <>
+                    <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-white', meta.cls)}>
+                      <Icon className="h-[18px] w-[18px]" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className={cn('truncate text-[13px]', n.read ? 'font-medium text-ink-2' : 'font-semibold text-ink')}>
+                          {n.title}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-ink-3">{n.timeAgo}</span>
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-snug text-ink-2">{n.description}</span>
+                    </span>
+                    {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" aria-label="Sin leer" />}
+                  </>
+                );
+                const cls = cn(
+                  'flex w-full items-start gap-3 rounded-[16px] p-3 text-left transition-colors',
+                  n.read ? 'hover:bg-fill' : 'bg-card/70 shadow-card hover:bg-card'
+                );
+                return (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: easeApple, delay: 0.04 * i }}
+                  >
+                    {n.link ? (
+                      <Link
+                        href={n.link}
+                        className={cls}
+                        onClick={() => {
+                          markNotificationAsRead(n.id);
+                          onClose();
+                        }}
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <button className={cls} onClick={() => markNotificationAsRead(n.id)}>
+                        {body}
+                      </button>
+                    )}
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
