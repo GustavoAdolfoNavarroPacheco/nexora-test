@@ -22,7 +22,7 @@ function WorkspaceHeader() {
     <div className="flex items-center gap-2.5 px-2 py-1.5">
       <NexoraMark className="h-8 w-8 shrink-0" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">Nexora</span>
+        <span className="block truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">NexoraWork</span>
         <span className="block truncate text-[11px] text-ink-2">Espacio de {currentUser.name.split(/\s+/)[0]}</span>
       </span>
     </div>

@@ -10,7 +10,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'Nexora — Proyectos y equipos',
+  title: 'NexoraWork — Proyectos y equipos',
+  applicationName: 'NexoraWork',
+  appleWebApp: { title: 'NexoraWork', capable: true, statusBarStyle: 'default' },
   description:
     'Sigue el avance de cada proyecto, reparte el trabajo del equipo y detecta a tiempo lo que se está retrasando.',
 };

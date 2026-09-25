@@ -89,7 +89,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader title="Configuración" subtitle="Tu espacio de trabajo, tu perfil y cómo se ve Nexora." />
+      <PageHeader title="Configuración" subtitle="Tu espacio de trabajo, tu perfil y cómo se ve NexoraWork." />
 
       <div className="grid gap-6 md:grid-cols-[220px_1fr] md:gap-10">
         {/* Section list */}

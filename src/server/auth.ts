@@ -66,7 +66,7 @@ function isAllowed(email: string | undefined) {
 }
 
 export const auth = betterAuth({
-  appName: 'Nexora',
+  appName: 'NexoraWork',
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
@@ -121,7 +121,7 @@ export const auth = betterAuth({
           await db.insert(S.notifications).values({
             id: `ntf-${crypto.randomUUID()}`,
             userId: user.id,
-            title: 'Te damos la bienvenida a Nexora',
+            title: 'Te damos la bienvenida a NexoraWork',
             description: 'Explora los proyectos del equipo o crea el tuyo desde el botón +.',
             type: 'alert',
           });

@@ -37,5 +37,5 @@ export function isActivePath(pathname: string, href: string) {
 
 export function titleForPath(pathname: string): string {
   const match = allNav.find((n) => isActivePath(pathname, n.href));
-  return match?.name ?? 'Nexora';
+  return match?.name ?? 'NexoraWork';
 }

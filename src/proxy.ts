@@ -37,5 +37,5 @@ function isCrossSite(request: NextRequest) {
 
 export const config = {
   // Everything except Better Auth's own endpoints, Next internals (assets, images, dev HMR) and files with an extension.
-  matcher: ['/((?!api/auth|_next/|.*\\..*).*)'],
+  matcher: ['/((?!api/auth|_next/|apple-icon|.*\\..*).*)'],
 };

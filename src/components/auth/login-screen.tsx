@@ -18,7 +18,7 @@ function describeError(code: string, provider?: Provider): string {
   const c = code.toLowerCase();
   if (c === 'provider_unavailable')
     return `El acceso con ${provider ? PROVIDER_NAME[provider] : 'este proveedor'} todavía no está configurado en este servidor.`;
-  if (c === 'not_allowed') return 'Esta cuenta no tiene acceso a Nexora. Pide acceso a quien administra el espacio de trabajo.';
+  if (c === 'not_allowed') return 'Esta cuenta no tiene acceso a NexoraWork. Pide acceso a quien administra el espacio de trabajo.';
   if (c === 'access_denied' || c.includes('cancel')) return 'Cancelaste el inicio de sesión. Puedes intentarlo cuando quieras.';
   if (c === 'rate_limited') return 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.';
   if (c.includes('state') || c.includes('restart')) return 'El inicio de sesión tardó demasiado. Vuelve a intentarlo.';
@@ -211,7 +211,7 @@ export function LoginScreen({ providers, next, error: initialError, expired }: L
               <motion.h1 variants={rise} className="mt-5 text-[28px] leading-[1.08] sm:text-[30px] font-semibold tracking-[-0.035em] text-ink lg:text-[36px]">
                 Inicia sesión
                 <br />
-                en Nexora
+                en NexoraWork
               </motion.h1>
               <motion.p variants={rise} className="mt-3 text-[15px] leading-relaxed text-ink-2">
                 Entra con tu cuenta de Apple o Google. Si es tu primera vez, la creamos al instante.
@@ -265,7 +265,7 @@ export function LoginScreen({ providers, next, error: initialError, expired }: L
 
               <motion.p variants={rise} className="mt-6 flex items-start justify-center gap-2 text-center text-[12px] leading-snug text-ink-3">
                 <Lock className="mt-px h-3.5 w-3.5 shrink-0" />
-                <span>Nexora nunca ve tu contraseña: Apple o Google confirman que eres tú.</span>
+                <span>NexoraWork nunca ve tu contraseña: Apple o Google confirman que eres tú.</span>
               </motion.p>
             </motion.div>
           </motion.div>

@@ -6,7 +6,7 @@ import { availableProviders } from '@/server/auth-config';
 import { getSession } from '@/server/session';
 
 export const metadata: Metadata = {
-  title: 'Iniciar sesión — Nexora',
+  title: 'Iniciar sesión — NexoraWork',
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

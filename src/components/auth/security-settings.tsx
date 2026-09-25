@@ -114,7 +114,7 @@ export function SecuritySettings() {
 
   return (
     <>
-      <Group title="Inicio de sesión" footer="Nexora no guarda contraseñas: Apple o Google confirman tu identidad cada vez que entras.">
+      <Group title="Inicio de sesión" footer="NexoraWork no guarda contraseñas: Apple o Google confirman tu identidad cada vez que entras.">
         {PROVIDERS.map(({ id, name, Logo }) => {
           const linked = accounts?.find((a) => a.providerId === id);
           return (

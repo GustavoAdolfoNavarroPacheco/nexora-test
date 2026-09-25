@@ -1,4 +1,4 @@
-# Nexora
+# NexoraWork
 
 Gestión de proyectos y equipos con Next.js 16, Postgres en [Neon](https://neon.tech) y Drizzle ORM.
 

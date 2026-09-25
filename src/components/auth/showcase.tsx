@@ -141,7 +141,7 @@ function NotificationStack({ tick }: { tick: number }) {
 }
 
 /**
- * The left half of the sign-in screen (the top on phones): what Nexora feels like once you're in.
+ * The left half of the sign-in screen (the top on phones): what NexoraWork feels like once you're in.
  * Purely illustrative, so it is hidden from assistive technology.
  */
 export function Showcase({ className }: { className?: string }) {
@@ -188,7 +188,7 @@ export function Showcase({ className }: { className?: string }) {
         className="hidden items-center gap-2.5 lg:flex"
       >
         <NexoraMark className="h-8 w-8" />
-        <span className="text-[17px] font-semibold tracking-[-0.02em]">Nexora</span>
+        <span className="text-[17px] font-semibold tracking-[-0.02em]">NexoraWork</span>
       </motion.div>
 
       <div aria-hidden className="flex flex-1 items-center justify-center py-2 [perspective:1200px] lg:py-6">
