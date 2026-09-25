@@ -1,7 +1,7 @@
 import 'server-only';
-import { asc, desc } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import { db, schema as S } from './db';
-import { APP_TIMEZONE, CURRENT_USER_ID } from './config';
+import { APP_TIMEZONE } from './config';
 import { dayIn, formatRelative } from '@/lib/time';
 import type { ActivityEvent, NotificationItem, Project, Task, User } from '@/lib/types';
 import type { WorkspaceData } from '@/lib/workspace';
@@ -14,7 +14,7 @@ export function toUser(row: UserRow): User {
     id: row.id,
     name: row.name,
     email: row.email,
-    avatar: row.avatar,
+    avatar: row.avatar ?? '',
     role: row.role,
     department: row.department,
     status: row.status,
@@ -34,11 +34,11 @@ export function toActivity(row: ActivityRow, user: User, now = new Date()): Acti
   };
 }
 
-/** Loads the whole workspace in a single round trip to Neon. */
-export async function getWorkspace(): Promise<WorkspaceData> {
+/** Loads the whole workspace, as seen by `userId`, in a single round trip to Neon. */
+export async function getWorkspace(userId: string): Promise<WorkspaceData> {
   const [userRows, projectRows, memberRows, milestoneRows, taskRows, subtaskRows, commentRows, activityRows, notificationRows] =
     await db.batch([
-      db.select().from(S.users).orderBy(asc(S.users.position)),
+      db.select().from(S.users).orderBy(asc(S.users.position), asc(S.users.createdAt)),
       db.select().from(S.projects).orderBy(desc(S.projects.createdAt)),
       db.select().from(S.projectMembers).orderBy(asc(S.projectMembers.position)),
       db.select().from(S.milestones).orderBy(asc(S.milestones.date)),
@@ -46,7 +46,7 @@ export async function getWorkspace(): Promise<WorkspaceData> {
       db.select().from(S.subtasks).orderBy(asc(S.subtasks.position)),
       db.select().from(S.comments).orderBy(asc(S.comments.createdAt)),
       db.select().from(S.activities).orderBy(desc(S.activities.createdAt)).limit(100),
-      db.select().from(S.notifications).orderBy(desc(S.notifications.createdAt)).limit(50),
+      db.select().from(S.notifications).where(eq(S.notifications.userId, userId)).orderBy(desc(S.notifications.createdAt)).limit(50),
     ]);
 
   const now = new Date();
@@ -92,9 +92,7 @@ export async function getWorkspace(): Promise<WorkspaceData> {
     createdAt: t.createdAt.toISOString(),
   }));
 
-  const notifications: NotificationItem[] = notificationRows
-    .filter((n) => n.userId === CURRENT_USER_ID)
-    .map((n) => ({
+  const notifications: NotificationItem[] = notificationRows.map((n) => ({
       id: n.id,
       title: n.title,
       description: n.description,
@@ -110,7 +108,7 @@ export async function getWorkspace(): Promise<WorkspaceData> {
     tasks,
     activities: activityRows.map((a) => toActivity(a, user(a.userId), now)),
     notifications,
-    currentUserId: CURRENT_USER_ID,
+    currentUserId: userId,
     today: dayIn(now, APP_TIMEZONE),
   };
 }

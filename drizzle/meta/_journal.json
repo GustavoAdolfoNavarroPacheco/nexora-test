@@ -8,6 +8,13 @@
       "when": 1790354725214,
       "tag": "0000_foamy_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790362035442,
+      "tag": "0001_loud_bruce_banner",
+      "breakpoints": true
     }
   ]
 }

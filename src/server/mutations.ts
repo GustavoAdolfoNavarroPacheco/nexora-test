@@ -3,7 +3,6 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import type { z } from 'zod';
 import { db, schema as S } from './db';
-import { CURRENT_USER_ID } from './config';
 import { notFound } from './http';
 import { toActivity, toUser } from './workspace';
 import type { MutationResult } from '@/lib/workspace';
@@ -21,14 +20,14 @@ function newId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-function activityInsert(entry: { action: string; entity: string; entityType: 'project' | 'task'; projectId: string | null }) {
+function activityInsert(userId: string, entry: { action: string; entity: string; entityType: 'project' | 'task'; projectId: string | null }) {
   return db
     .insert(S.activities)
-    .values({ id: newId('act'), userId: CURRENT_USER_ID, ...entry })
+    .values({ id: newId('act'), userId, ...entry })
     .returning();
 }
 
-const currentUserSelect = () => db.select().from(S.users).where(eq(S.users.id, CURRENT_USER_ID));
+const userSelect = (userId: string) => db.select().from(S.users).where(eq(S.users.id, userId));
 
 /** Project progress = share of its tasks that are completed (unchanged when it has no tasks). */
 function progressUpdate(projectId: string) {
@@ -55,7 +54,7 @@ function activityResult(rows: unknown, userRows: unknown): MutationResult['activ
 
 // --------------------------------------------------------------------------- projects
 
-export async function createProject(input: z.output<typeof V.createProjectSchema>): Promise<MutationResult> {
+export async function createProject(userId: string, input: z.output<typeof V.createProjectSchema>): Promise<MutationResult> {
   const members = [input.managerId, ...input.teamIds.filter((u) => u !== input.managerId)];
   const results = await atomically([
     db.insert(S.projects).values({
@@ -73,8 +72,8 @@ export async function createProject(input: z.output<typeof V.createProjectSchema
     ...(input.milestones.length
       ? [db.insert(S.milestones).values(input.milestones.map((m) => ({ ...m, projectId: input.id })))]
       : []),
-    activityInsert({ action: 'creó el proyecto', entity: input.name, entityType: 'project', projectId: input.id }),
-    currentUserSelect(),
+    activityInsert(userId, { action: 'creó el proyecto', entity: input.name, entityType: 'project', projectId: input.id }),
+    userSelect(userId),
   ]);
   return { activity: activityResult(results.at(-2), results.at(-1)) };
 }
@@ -97,25 +96,25 @@ export async function createMilestone(projectId: string, input: z.output<typeof 
   return {};
 }
 
-export async function updateMilestone(id: string, input: z.output<typeof V.updateMilestoneSchema>): Promise<MutationResult> {
+export async function updateMilestone(userId: string, id: string, input: z.output<typeof V.updateMilestoneSchema>): Promise<MutationResult> {
   const [row] = await db.update(S.milestones).set(input).where(eq(S.milestones.id, id)).returning();
   if (!row) throw notFound('El hito');
   if (!input.completed) return {};
   const [activity, user] = await atomically([
-    activityInsert({ action: 'cumplió el hito', entity: row.title, entityType: 'project', projectId: row.projectId }),
-    currentUserSelect(),
+    activityInsert(userId, { action: 'cumplió el hito', entity: row.title, entityType: 'project', projectId: row.projectId }),
+    userSelect(userId),
   ]);
   return { activity: activityResult(activity, user) };
 }
 
 // --------------------------------------------------------------------------- tasks
 
-export async function createTask(input: z.output<typeof V.createTaskSchema>): Promise<MutationResult> {
+export async function createTask(userId: string, input: z.output<typeof V.createTaskSchema>): Promise<MutationResult> {
   const results = await atomically([
     db.insert(S.tasks).values({ ...input, completed: input.status === 'completada' }),
     progressUpdate(input.projectId),
-    activityInsert({ action: 'creó la tarea', entity: input.title, entityType: 'task', projectId: input.projectId }),
-    currentUserSelect(),
+    activityInsert(userId, { action: 'creó la tarea', entity: input.title, entityType: 'task', projectId: input.projectId }),
+    userSelect(userId),
   ]);
   return {
     progress: results[1] as MutationResult['progress'],
@@ -123,7 +122,7 @@ export async function createTask(input: z.output<typeof V.createTaskSchema>): Pr
   };
 }
 
-export async function updateTask(id: string, patch: z.output<typeof V.updateTaskSchema>): Promise<MutationResult> {
+export async function updateTask(userId: string, id: string, patch: z.output<typeof V.updateTaskSchema>): Promise<MutationResult> {
   const [before] = await db.select().from(S.tasks).where(eq(S.tasks.id, id));
   if (!before) throw notFound('La tarea');
   if (Object.keys(patch).length === 0) return {};
@@ -135,13 +134,13 @@ export async function updateTask(id: string, patch: z.output<typeof V.updateTask
   if (flipped) {
     queries.push(
       progressUpdate(before.projectId),
-      activityInsert({
+      activityInsert(userId, {
         action: completed ? 'completó la tarea' : 'reabrió la tarea',
         entity: patch.title ?? before.title,
         entityType: 'task',
         projectId: before.projectId,
       }),
-      currentUserSelect()
+      userSelect(userId)
     );
   }
   const results = await atomically(queries);
@@ -165,24 +164,24 @@ export async function updateSubtask(id: string, input: z.output<typeof V.updateS
   return {};
 }
 
-export async function createComment(taskId: string, input: z.output<typeof V.createCommentSchema>): Promise<MutationResult> {
-  await db.insert(S.comments).values({ ...input, taskId, authorId: CURRENT_USER_ID });
+export async function createComment(userId: string, taskId: string, input: z.output<typeof V.createCommentSchema>): Promise<MutationResult> {
+  await db.insert(S.comments).values({ ...input, taskId, authorId: userId });
   return {};
 }
 
 // --------------------------------------------------------------------------- notifications
 
-export async function updateNotification(id: string, input: z.output<typeof V.updateNotificationSchema>): Promise<MutationResult> {
+export async function updateNotification(userId: string, id: string, input: z.output<typeof V.updateNotificationSchema>): Promise<MutationResult> {
   const rows = await db
     .update(S.notifications)
     .set(input)
-    .where(and(eq(S.notifications.id, id), eq(S.notifications.userId, CURRENT_USER_ID)))
+    .where(and(eq(S.notifications.id, id), eq(S.notifications.userId, userId)))
     .returning({ id: S.notifications.id });
   if (rows.length === 0) throw notFound('La notificación');
   return {};
 }
 
-export async function markAllNotificationsRead(): Promise<MutationResult> {
-  await db.update(S.notifications).set({ read: true }).where(eq(S.notifications.userId, CURRENT_USER_ID));
+export async function markAllNotificationsRead(userId: string): Promise<MutationResult> {
+  await db.update(S.notifications).set({ read: true }).where(eq(S.notifications.userId, userId));
   return {};
 }

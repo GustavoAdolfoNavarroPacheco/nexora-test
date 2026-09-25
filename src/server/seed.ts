@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import * as schema from './db/schema';
 import {
@@ -30,6 +30,7 @@ export async function seedWorkspace(db: Db, timeZone: string, now = new Date()) 
   const S = schema;
   await db.batch([
     // Children first; cascades would cover most of it but explicit order keeps it obvious.
+    // Only the sample team is replaced: people who signed in keep their accounts and sessions.
     db.delete(S.notifications),
     db.delete(S.activities),
     db.delete(S.comments),
@@ -38,7 +39,7 @@ export async function seedWorkspace(db: Db, timeZone: string, now = new Date()) 
     db.delete(S.milestones),
     db.delete(S.projectMembers),
     db.delete(S.projects),
-    db.delete(S.users),
+    db.delete(S.users).where(inArray(S.users.id, mockUsers.map((u) => u.id))),
 
     db.insert(S.users).values(
       mockUsers.map((u, i) => ({

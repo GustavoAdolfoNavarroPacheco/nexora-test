@@ -1,9 +1,10 @@
 import { updateMilestone } from '@/server/mutations';
 import { updateMilestoneSchema } from '@/server/validation';
-import { handle, readJson } from '@/server/http';
+import { readJson } from '@/server/http';
+import { authed } from '@/server/session';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const PATCH = handle(async (request: Request, { params }: Ctx) =>
-  updateMilestone((await params).id, await readJson(request, updateMilestoneSchema))
+export const PATCH = authed(async (userId, request: Request, { params }: Ctx) =>
+  updateMilestone(userId, (await params).id, await readJson(request, updateMilestoneSchema))
 );

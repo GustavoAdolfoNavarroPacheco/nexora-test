@@ -1,5 +1,6 @@
 import { createTask } from '@/server/mutations';
 import { createTaskSchema } from '@/server/validation';
-import { handle, readJson } from '@/server/http';
+import { readJson } from '@/server/http';
+import { authed } from '@/server/session';
 
-export const POST = handle(async (request: Request) => createTask(await readJson(request, createTaskSchema)));
+export const POST = authed(async (userId, request: Request) => createTask(userId, await readJson(request, createTaskSchema)));

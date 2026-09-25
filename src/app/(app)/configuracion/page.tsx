@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog } from '@/components/ui/alert-dialog';
+import { SecuritySettings } from '@/components/auth/security-settings';
 import { spring, easeApple } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -78,7 +79,6 @@ export default function SettingsPage() {
 
   const [workspaceName, setWorkspaceName] = useState('Acme Corp');
   const [name, setName] = useState(currentUser.name);
-  const [email, setEmail] = useState(currentUser.email);
   const [role, setRole] = useState(currentUser.role);
   const [prefs, setPrefs] = useState({ tasks: true, mentions: true, deadlines: true, weekly: false });
 
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                 <Group title="Datos personales">
                   <div className="space-y-4 p-4 sm:p-5">
                     <Input label="Nombre completo" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-                    <Input label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                    <Input label="Correo" type="email" value={currentUser.email} disabled helperText="Es el correo de la cuenta con la que inicias sesión." />
                     <Input label="Cargo" value={role} onChange={(e) => setRole(e.target.value)} />
                   </div>
                 </Group>
@@ -187,33 +187,7 @@ export default function SettingsPage() {
               </>
             )}
 
-            {section === 'seguridad' && (
-              <>
-                <Group title="Verificación en dos pasos" footer="Pide un código de tu app de autenticación en cada inicio de sesión.">
-                  <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
-                    <div>
-                      <p className="text-[14px] text-ink">Estado</p>
-                      <p className="text-[12px] text-orange-ink">Desactivada</p>
-                    </div>
-                    <Button variant="tinted" size="sm">
-                      Activar
-                    </Button>
-                  </div>
-                </Group>
-                <form onSubmit={(e) => save(e, 'Contraseña')} className="space-y-3">
-                  <Group title="Cambiar contraseña">
-                    <div className="space-y-4 p-4 sm:p-5">
-                      <Input type="password" label="Contraseña actual" autoComplete="current-password" />
-                      <Input type="password" label="Nueva contraseña" autoComplete="new-password" helperText="Al menos 12 caracteres." />
-                      <Input type="password" label="Repite la nueva contraseña" autoComplete="new-password" />
-                    </div>
-                  </Group>
-                  <div className="flex justify-end">
-                    <Button type="submit">Cambiar contraseña</Button>
-                  </div>
-                </form>
-              </>
-            )}
+            {section === 'seguridad' && <SecuritySettings />}
 
             {section === 'apariencia' && (
               <Group title="Apariencia" footer="«Automático» sigue el modo claro u oscuro de tu dispositivo.">

@@ -4,25 +4,16 @@ import React, { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check } from 'lucide-react';
+import { Check, LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
+import { NexoraMark } from '@/components/ui/nexora-mark';
 import { Chevrons } from '@/components/ui/input';
 import { useStore } from '@/lib/store';
+import { useSignOut } from '@/components/auth/use-sign-out';
 import { spring } from '@/lib/motion';
 import { useClickOutside, useEscape } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 import { primaryNav, teamNav, systemNav, isActivePath, type NavItem } from './nav-items';
-
-export function NexoraMark({ className }: { className?: string }) {
-  // Two offset capsules — a project handed from one teammate to the next.
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <rect width="32" height="32" rx="9" fill="var(--accent)" />
-      <rect x="7" y="9" width="12" height="6" rx="3" fill="white" />
-      <rect x="13" y="17" width="12" height="6" rx="3" fill="white" fillOpacity="0.72" />
-    </svg>
-  );
-}
 
 const workspaces = [
   { id: 'ws-1', name: 'Acme Corp', detail: 'Producción · Enterprise' },
@@ -143,6 +134,74 @@ function NavSection({ title, items, counts }: { title?: string; items: NavItem[]
   );
 }
 
+/** The signed-in person, pinned to the bottom of the sidebar. Opens upward like the macOS Apple menu. */
+function AccountMenu() {
+  const { currentUser } = useStore();
+  const { signOut, signingOut } = useSignOut();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside(ref, open, close);
+  useEscape(open, close);
+
+  return (
+    <div ref={ref} className="relative mt-3">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.98, transition: { duration: 0.12 } }}
+            transition={spring}
+            style={{ transformOrigin: 'bottom center' }}
+            className="glass absolute inset-x-0 bottom-[calc(100%+6px)] z-30 rounded-[14px] bg-elevated p-1.5 shadow-pop"
+          >
+            <p className="truncate px-2.5 pt-1.5 pb-2 text-[12px] text-ink-2">{currentUser.email}</p>
+            <Link
+              role="menuitem"
+              href="/configuracion"
+              onClick={close}
+              className="flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[13px] text-ink transition-colors hover:bg-accent hover:text-white"
+            >
+              <Settings className="h-4 w-4 opacity-80" />
+              Configuración
+            </Link>
+            <div className="mx-2.5 my-1 h-px bg-line" />
+            <button
+              role="menuitem"
+              onClick={() => void signOut()}
+              disabled={signingOut}
+              className="flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-left text-[13px] text-red-ink transition-colors hover:bg-red hover:text-white"
+            >
+              <LogOut className="h-4 w-4 opacity-80" />
+              {signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Cuenta de ${currentUser.name}`}
+        className={cn(
+          'flex w-full items-center gap-3 rounded-[12px] px-2 py-2 text-left transition-colors hover:bg-fill-2',
+          open && 'bg-fill-2'
+        )}
+      >
+        <Avatar src={currentUser.avatar} name={currentUser.name} size="sm" status={currentUser.status} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium text-ink">{currentUser.name}</span>
+          <span className="block truncate text-[11px] text-ink-2">{currentUser.role}</span>
+        </span>
+        <Chevrons className="text-ink-3" />
+      </button>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const { currentUser, projects, tasks } = useStore();
 
@@ -162,16 +221,7 @@ export function Sidebar() {
           <NavSection title="Cuenta" items={systemNav} counts={counts} />
         </nav>
 
-        <Link
-          href="/configuracion"
-          className="mt-3 flex items-center gap-3 rounded-[12px] px-2 py-2 transition-colors hover:bg-fill-2"
-        >
-          <Avatar src={currentUser.avatar} name={currentUser.name} size="sm" status={currentUser.status} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-ink">{currentUser.name}</span>
-            <span className="block truncate text-[11px] text-ink-2">{currentUser.role}</span>
-          </span>
-        </Link>
+        <AccountMenu />
       </div>
     </aside>
   );

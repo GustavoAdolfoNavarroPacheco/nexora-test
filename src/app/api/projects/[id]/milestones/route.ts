@@ -1,9 +1,10 @@
 import { createMilestone } from '@/server/mutations';
 import { createMilestoneSchema } from '@/server/validation';
-import { handle, readJson } from '@/server/http';
+import { readJson } from '@/server/http';
+import { authed } from '@/server/session';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const POST = handle(async (request: Request, { params }: Ctx) =>
+export const POST = authed(async (_userId, request: Request, { params }: Ctx) =>
   createMilestone((await params).id, await readJson(request, createMilestoneSchema))
 );

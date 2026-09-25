@@ -10,7 +10,7 @@ import { useClickOutside, useEscape, useMediaQuery, useModKey } from '@/lib/hook
 import { spring, easeApple } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { NotificationFlyout } from '@/components/notifications/notification-flyout';
-import { NexoraMark } from './sidebar';
+import { NexoraMark } from '@/components/ui/nexora-mark';
 import { titleForPath } from './nav-items';
 
 function IconButton({

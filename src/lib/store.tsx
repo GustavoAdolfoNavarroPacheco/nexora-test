@@ -115,6 +115,11 @@ async function api<T = MutationResult>(method: 'GET' | 'POST' | 'PATCH' | 'DELET
     cache: 'no-store',
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    // Session expired or was closed from another device: sign in again and come back here.
+    const here = window.location.pathname + window.location.search;
+    window.location.replace(`/login?expired=1&next=${encodeURIComponent(here)}`);
+  }
   if (!res.ok) throw new ApiError((data as { error?: string }).error ?? `Error ${res.status}`);
   return data as T;
 }

@@ -1,4 +1,4 @@
 import { markAllNotificationsRead } from '@/server/mutations';
-import { handle } from '@/server/http';
+import { authed } from '@/server/session';
 
-export const POST = handle(() => markAllNotificationsRead());
+export const POST = authed((userId) => markAllNotificationsRead(userId));

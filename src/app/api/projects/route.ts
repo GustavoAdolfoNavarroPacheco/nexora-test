@@ -1,5 +1,6 @@
 import { createProject } from '@/server/mutations';
 import { createProjectSchema } from '@/server/validation';
-import { handle, readJson } from '@/server/http';
+import { readJson } from '@/server/http';
+import { authed } from '@/server/session';
 
-export const POST = handle(async (request: Request) => createProject(await readJson(request, createProjectSchema)));
+export const POST = authed(async (userId, request: Request) => createProject(userId, await readJson(request, createProjectSchema)));

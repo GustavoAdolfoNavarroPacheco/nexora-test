@@ -1,4 +1,4 @@
 import { getWorkspace } from '@/server/workspace';
-import { handle } from '@/server/http';
+import { authed } from '@/server/session';
 
-export const GET = handle(() => getWorkspace());
+export const GET = authed((userId) => getWorkspace(userId));

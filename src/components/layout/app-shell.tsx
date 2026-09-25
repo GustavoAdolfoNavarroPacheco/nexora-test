@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { motion, MotionConfig } from 'motion/react';
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { StoreProvider } from '@/lib/store';
 import type { WorkspaceData } from '@/lib/workspace';
 import { easeApple } from '@/lib/motion';
@@ -15,9 +15,21 @@ import { CommandPalette } from '@/components/command-palette/command-palette';
 import { CreateProjectModal } from '@/components/projects/create-project-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { TaskDetailDrawer } from '@/components/tasks/task-detail-drawer';
+import { WelcomeOverlay } from '@/components/auth/welcome-overlay';
+import type { Provider } from '@/lib/auth-shared';
 
-export function AppShell({ initialData, children }: { initialData: WorkspaceData; children: React.ReactNode }) {
+export function AppShell({
+  initialData,
+  welcome,
+  children,
+}: {
+  initialData: WorkspaceData;
+  /** Set right after signing in: plays the welcome animation before revealing the app. */
+  welcome?: Provider;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
+  const [welcoming, setWelcoming] = useState(Boolean(welcome));
 
   return (
     <StoreProvider initialData={initialData}>
@@ -37,9 +49,9 @@ export function AppShell({ initialData, children }: { initialData: WorkspaceData
           <motion.main
             id="contenido"
             key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: easeApple }}
+            initial={{ opacity: 0, y: 8, scale: welcome ? 0.97 : 1 }}
+            animate={welcoming ? { opacity: 0, y: 8, scale: 0.97 } : { opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: welcome ? 0.7 : 0.45, ease: easeApple }}
             className="mx-auto w-full max-w-[1240px] flex-1 px-4 pt-2 pb-32 sm:px-8 lg:pb-16"
           >
             {children}
@@ -52,6 +64,9 @@ export function AppShell({ initialData, children }: { initialData: WorkspaceData
         <CreateTaskModal />
         <TaskDetailDrawer />
         <ToastContainer />
+        <AnimatePresence>
+          {welcoming && welcome && <WelcomeOverlay key="welcome" provider={welcome} onDone={() => setWelcoming(false)} />}
+        </AnimatePresence>
       </MotionConfig>
     </StoreProvider>
   );
