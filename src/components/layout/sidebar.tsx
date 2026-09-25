@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check, LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { NexoraMark } from '@/components/ui/nexora-mark';
 import { Chevrons } from '@/components/ui/input';
@@ -15,71 +15,16 @@ import { useClickOutside, useEscape } from '@/lib/hooks';
 import { cn } from '@/lib/utils';
 import { primaryNav, teamNav, systemNav, isActivePath, type NavItem } from './nav-items';
 
-const workspaces = [
-  { id: 'ws-1', name: 'Acme Corp', detail: 'Producción · Enterprise' },
-  { id: 'ws-2', name: 'Nexora Labs', detail: 'Staging · Pro' },
-  { id: 'ws-3', name: 'Proyectos personales', detail: 'Gratis' },
-];
-
-function WorkspaceSwitcher() {
-  const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState(workspaces[0]);
-  const ref = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
-  useClickOutside(ref, open, close);
-  useEscape(open, close);
-
+/** Brand plus whose private workspace this is. */
+function WorkspaceHeader() {
+  const { currentUser } = useStore();
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        className="flex w-full items-center gap-2.5 rounded-[12px] px-2 py-1.5 text-left transition-colors hover:bg-fill-2"
-      >
-        <NexoraMark className="h-8 w-8 shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">{current.name}</span>
-          <span className="block truncate text-[11px] text-ink-2">{current.detail}</span>
-        </span>
-        <Chevrons className="text-ink-3" />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            role="listbox"
-            initial={{ opacity: 0, y: -6, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.12 } }}
-            transition={spring}
-            style={{ transformOrigin: 'top center' }}
-            className="glass absolute inset-x-0 top-[calc(100%+6px)] z-30 rounded-[14px] bg-elevated p-1.5 shadow-pop"
-          >
-            {workspaces.map((ws) => {
-              const selected = ws.id === current.id;
-              return (
-                <button
-                  key={ws.id}
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    setCurrent(ws);
-                    setOpen(false);
-                  }}
-                  className="group flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left transition-colors hover:bg-accent"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-ink group-hover:text-white">{ws.name}</span>
-                    <span className="block truncate text-[11px] text-ink-2 group-hover:text-white/75">{ws.detail}</span>
-                  </span>
-                  {selected && <Check className="h-4 w-4 text-accent-ink group-hover:text-white" strokeWidth={2.5} />}
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="flex items-center gap-2.5 px-2 py-1.5">
+      <NexoraMark className="h-8 w-8 shrink-0" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[14px] font-semibold tracking-[-0.02em] text-ink">Nexora</span>
+        <span className="block truncate text-[11px] text-ink-2">Espacio de {currentUser.name.split(/\s+/)[0]}</span>
+      </span>
     </div>
   );
 }
@@ -213,7 +158,7 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[256px] lg:block">
       <div className="glass flex h-full flex-col border-r border-line bg-sidebar px-3 pt-4 pb-3">
-        <WorkspaceSwitcher />
+        <WorkspaceHeader />
 
         <nav aria-label="Principal" className="no-scrollbar mt-5 flex-1 space-y-6 overflow-y-auto">
           <NavSection items={primaryNav} counts={counts} />

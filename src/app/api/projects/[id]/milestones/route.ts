@@ -5,6 +5,6 @@ import { authed } from '@/server/session';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const POST = authed(async (_userId, request: Request, { params }: Ctx) =>
-  createMilestone((await params).id, await readJson(request, createMilestoneSchema))
+export const POST = authed(async (userId, request: Request, { params }: Ctx) =>
+  createMilestone(userId, (await params).id, await readJson(request, createMilestoneSchema))
 );

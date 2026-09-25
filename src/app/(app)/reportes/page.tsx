@@ -13,33 +13,22 @@ import { SegmentedBar } from '@/components/ui/progress-bar';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Reveal, Stagger, StaggerItem } from '@/components/ui/reveal';
 import { easeApple } from '@/lib/motion';
-import { cn, today, elapsedShare, getTaskStatusMeta, isAtRisk, isOverdue, TASK_STATUSES, toneClasses, getProjectStatusMeta } from '@/lib/utils';
+import { closedPerBucket, dayBuckets, monthBuckets, type Bucket } from '@/lib/history';
+import { cn, elapsedShare, getTaskStatusMeta, isAtRisk, isOverdue, TASK_STATUSES, toneClasses, getProjectStatusMeta } from '@/lib/utils';
 
 type Period = 'semana' | 'mes' | 'trimestre';
 
-// Tasks closed per bucket (oldest → current). Labels are derived from today's date.
-const CLOSED: Record<Period, number[]> = {
-  semana: [3, 5, 0, 1, 6, 7, 4],
-  mes: [21, 27, 24, 33],
-  trimestre: [86, 112, 26],
+const BUCKETS: Record<Period, () => Bucket[]> = {
+  semana: () => dayBuckets(7, 1),
+  mes: () => dayBuckets(4, 7),
+  trimestre: () => monthBuckets(3),
 };
 
-function bucketLabels(period: Period): string[] {
-  const base = today();
-  const n = CLOSED[period].length;
-  return Array.from({ length: n }, (_, i) => {
-    const back = n - 1 - i;
-    if (period === 'mes') return `S${i + 1}`;
-    const d = new Date(base);
-    if (period === 'semana') {
-      d.setDate(d.getDate() - back);
-      return new Intl.DateTimeFormat('es-ES', { weekday: 'narrow' }).format(d);
-    }
-    d.setDate(1);
-    d.setMonth(d.getMonth() - back);
-    const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(d).replace('.', '');
-    return month.charAt(0).toUpperCase() + month.slice(1);
-  });
+function bucketLabel(period: Period, bucket: Bucket, i: number): string {
+  if (period === 'mes') return `S${i + 1}`;
+  if (period === 'semana') return new Intl.DateTimeFormat('es-ES', { weekday: 'narrow' }).format(bucket.start);
+  const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(bucket.start).replace('.', '');
+  return month.charAt(0).toUpperCase() + month.slice(1);
 }
 
 function ClosedChart() {
@@ -48,8 +37,10 @@ function ClosedChart() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '0px 0px -10% 0px' });
 
-  const labels = bucketLabels(period);
-  const data = CLOSED[period].map((value, i) => ({ label: labels[i], value }));
+  const { tasks } = useStore();
+  const buckets = BUCKETS[period]();
+  const closed = closedPerBucket(tasks, buckets);
+  const data = buckets.map((b, i) => ({ label: bucketLabel(period, b, i), value: closed[i] }));
   const max = Math.max(...data.map((d) => d.value), 1);
   const total = data.reduce((a, d) => a + d.value, 0);
   const avg = total / data.length;

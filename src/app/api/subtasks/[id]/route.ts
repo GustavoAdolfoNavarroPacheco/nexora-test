@@ -5,6 +5,6 @@ import { authed } from '@/server/session';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const PATCH = authed(async (_userId, request: Request, { params }: Ctx) =>
-  updateSubtask((await params).id, await readJson(request, updateSubtaskSchema))
+export const PATCH = authed(async (userId, request: Request, { params }: Ctx) =>
+  updateSubtask(userId, (await params).id, await readJson(request, updateSubtaskSchema))
 );

@@ -90,7 +90,6 @@ interface StoreContextType {
   setIsCreateProjectOpen: (open: boolean) => void;
   setIsCreateTaskOpen: (open: boolean, defaults?: CreateTaskDefaults) => void;
   setSelectedTaskId: (id: string | null) => void;
-  resetToDefaults: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -122,6 +121,13 @@ async function api<T = MutationResult>(method: 'GET' | 'POST' | 'PATCH' | 'DELET
   }
   if (!res.ok) throw new ApiError((data as { error?: string }).error ?? `Error ${res.status}`);
   return data as T;
+}
+
+/** Applies a status change, keeping `completed` and `completedAt` in step with the server. */
+function withStatus(task: Task, status: TaskStatus): Task {
+  const completed = status === 'completada';
+  if (completed === task.completed) return { ...task, status };
+  return { ...task, status, completed, completedAt: completed ? new Date().toISOString() : undefined };
 }
 
 function progressFor(projectId: string, allTasks: Task[]): number | null {
@@ -398,6 +404,7 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
       status: data.status,
       dueDate: data.dueDate,
       completed: data.status === 'completada',
+      completedAt: data.status === 'completada' ? new Date().toISOString() : undefined,
       subtasks: [],
       comments: [],
       createdAt: new Date().toISOString(),
@@ -425,9 +432,9 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
     if (!target) return;
     const next = tasks.map((t) => {
       if (t.id !== id) return t;
-      const updated = { ...t, ...partial };
-      if (partial.status) updated.completed = partial.status === 'completada';
-      return updated;
+      const { status, ...rest } = partial;
+      const updated = { ...t, ...rest };
+      return status ? withStatus(updated, status) : updated;
     });
     commitTasks(next, [target.projectId]);
     sync(api('PATCH', `/api/tasks/${id}`, partial));
@@ -439,7 +446,7 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
     const completed = !target.completed;
     const status: TaskStatus = completed ? 'completada' : 'en_progreso';
     commitTasks(
-      tasks.map((t) => (t.id === id ? { ...t, completed, status } : t)),
+      tasks.map((t) => (t.id === id ? withStatus(t, status) : t)),
       [target.projectId]
     );
     addToast({
@@ -454,7 +461,7 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
     const target = tasks.find((t) => t.id === id);
     if (!target || target.status === status) return;
     commitTasks(
-      tasks.map((t) => (t.id === id ? { ...t, status, completed: status === 'completada' } : t)),
+      tasks.map((t) => (t.id === id ? withStatus(t, status) : t)),
       [target.projectId]
     );
     addToast({
@@ -511,19 +518,6 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
     setCreateTaskOpenState(open);
   };
 
-  const resetToDefaults = async () => {
-    try {
-      applyWorkspace(await api<WorkspaceData>('POST', '/api/workspace/reset'));
-      addToast({ title: 'Datos de demostración restaurados', type: 'success' });
-    } catch (err) {
-      addToast({
-        title: 'No se pudieron restaurar los datos',
-        description: err instanceof ApiError ? err.message : undefined,
-        type: 'error',
-      });
-    }
-  };
-
   return (
     <StoreContext.Provider
       value={{
@@ -562,7 +556,6 @@ export function StoreProvider({ initialData, children }: { initialData: Workspac
         setIsCreateProjectOpen,
         setIsCreateTaskOpen,
         setSelectedTaskId,
-        resetToDefaults,
       }}
     >
       {children}

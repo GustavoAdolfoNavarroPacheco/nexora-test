@@ -105,12 +105,16 @@ export const projects = pgTable(
   'projects',
   {
     id: text('id').primaryKey(),
+    // Every workspace is private: a project and everything under it belongs to one account.
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
     clientOrArea: text('client_or_area').notNull(),
     managerId: text('manager_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     progress: integer('progress').notNull().default(0),
     priority: priorityEnum('priority').notNull(),
     status: projectStatusEnum('status').notNull(),
@@ -118,7 +122,7 @@ export const projects = pgTable(
     dueDate: date('due_date', { mode: 'string' }).notNull(),
     createdAt: createdAt(),
   },
-  (t) => [index('projects_due_idx').on(t.dueDate)]
+  (t) => [index('projects_due_idx').on(t.dueDate), index('projects_owner_idx').on(t.ownerId)]
 );
 
 export const projectMembers = pgTable(
@@ -160,11 +164,13 @@ export const tasks = pgTable(
     description: text('description').notNull().default(''),
     assigneeId: text('assignee_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     priority: priorityEnum('priority').notNull(),
     status: taskStatusEnum('status').notNull(),
     dueDate: date('due_date', { mode: 'string' }).notNull(),
     completed: boolean('completed').notNull().default(false),
+    // When it was last marked done; drives the history charts. Cleared if reopened.
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
     createdAt: createdAt(),
   },
   (t) => [index('tasks_project_idx').on(t.projectId), index('tasks_assignee_idx').on(t.assigneeId)]
@@ -193,7 +199,7 @@ export const comments = pgTable(
       .references(() => tasks.id, { onDelete: 'cascade' }),
     authorId: text('author_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     content: text('content').notNull(),
     createdAt: createdAt(),
   },
@@ -206,7 +212,7 @@ export const activities = pgTable(
     id: text('id').primaryKey(),
     userId: text('user_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     action: text('action').notNull(),
     entity: text('entity').notNull(),
     entityType: entityTypeEnum('entity_type').notNull(),

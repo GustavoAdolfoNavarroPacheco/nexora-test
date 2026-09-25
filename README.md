@@ -15,7 +15,7 @@ Gestión de proyectos y equipos con Next.js 16, Postgres en [Neon](https://neon.
    Genera `BETTER_AUTH_SECRET` con `npx @better-auth/cli secret` y configura al menos un proveedor
    de inicio de sesión (ver [Inicio de sesión](#inicio-de-sesión)).
 
-3. Crea las tablas y carga los datos de ejemplo:
+3. Crea las tablas:
 
    ```bash
    npm run db:setup
@@ -33,8 +33,7 @@ Gestión de proyectos y equipos con Next.js 16, Postgres en [Neon](https://neon.
 | --- | --- |
 | `npm run db:generate` | Genera una migración SQL en `drizzle/` a partir de `src/server/db/schema.ts` |
 | `npm run db:migrate` | Aplica las migraciones pendientes en Neon |
-| `npm run db:seed` | Borra y vuelve a cargar el espacio de ejemplo (fechas desplazadas a hoy) |
-| `npm run db:setup` | `db:migrate` + `db:seed` |
+| `npm run db:setup` | Igual que `db:migrate` (primera instalación) |
 | `npm run db:studio` | Abre Drizzle Studio para explorar los datos |
 
 Para cambiar el modelo: edita `schema.ts`, ejecuta `db:generate`, revisa el SQL generado y aplica con `db:migrate`.
@@ -82,4 +81,7 @@ En Configuración → Seguridad se ven los dispositivos con sesión abierta y se
 - `src/app/api/` — API REST (`/api/workspace`, `/api/projects`, `/api/tasks`, …).
 - `src/lib/store.tsx` — estado del cliente. Aplica los cambios al instante (optimista) y, si el servidor los rechaza, muestra un aviso y recarga el estado real.
 
-«Restaurar datos originales» vuelve a cargar el equipo y los proyectos de ejemplo; las cuentas reales y sus sesiones se conservan.
+Cada cuenta tiene un espacio privado: los proyectos pertenecen a quien los crea (`projects.owner_id`) y
+todo lo demás cuelga de ellos. `getWorkspace` solo lee lo del usuario de la sesión y cada escritura en
+`mutations.ts` se filtra por propietario, así que un id ajeno responde 404. Los gráficos de avance se
+calculan con las fechas reales de creación y cierre de cada tarea (`tasks.completed_at`).

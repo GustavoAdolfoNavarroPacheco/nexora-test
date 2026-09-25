@@ -1,5 +1,5 @@
 import 'server-only';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, inArray } from 'drizzle-orm';
 import { db, schema as S } from './db';
 import { APP_TIMEZONE } from './config';
 import { dayIn, formatRelative } from '@/lib/time';
@@ -36,16 +36,19 @@ export function toActivity(row: ActivityRow, user: User, now = new Date()): Acti
 
 /** Loads the whole workspace, as seen by `userId`, in a single round trip to Neon. */
 export async function getWorkspace(userId: string): Promise<WorkspaceData> {
+  const ownedProjects = db.select({ id: S.projects.id }).from(S.projects).where(eq(S.projects.ownerId, userId));
+  const ownedTasks = db.select({ id: S.tasks.id }).from(S.tasks).where(inArray(S.tasks.projectId, ownedProjects));
   const [userRows, projectRows, memberRows, milestoneRows, taskRows, subtaskRows, commentRows, activityRows, notificationRows] =
     await db.batch([
-      db.select().from(S.users).orderBy(asc(S.users.position), asc(S.users.createdAt)),
-      db.select().from(S.projects).orderBy(desc(S.projects.createdAt)),
-      db.select().from(S.projectMembers).orderBy(asc(S.projectMembers.position)),
-      db.select().from(S.milestones).orderBy(asc(S.milestones.date)),
-      db.select().from(S.tasks).orderBy(desc(S.tasks.createdAt)),
-      db.select().from(S.subtasks).orderBy(asc(S.subtasks.position)),
-      db.select().from(S.comments).orderBy(asc(S.comments.createdAt)),
-      db.select().from(S.activities).orderBy(desc(S.activities.createdAt)).limit(100),
+      // A private workspace: the owner is the only person in it.
+      db.select().from(S.users).where(eq(S.users.id, userId)),
+      db.select().from(S.projects).where(eq(S.projects.ownerId, userId)).orderBy(desc(S.projects.createdAt)),
+      db.select().from(S.projectMembers).where(inArray(S.projectMembers.projectId, ownedProjects)).orderBy(asc(S.projectMembers.position)),
+      db.select().from(S.milestones).where(inArray(S.milestones.projectId, ownedProjects)).orderBy(asc(S.milestones.date)),
+      db.select().from(S.tasks).where(inArray(S.tasks.projectId, ownedProjects)).orderBy(desc(S.tasks.createdAt)),
+      db.select().from(S.subtasks).where(inArray(S.subtasks.taskId, ownedTasks)).orderBy(asc(S.subtasks.position)),
+      db.select().from(S.comments).where(inArray(S.comments.taskId, ownedTasks)).orderBy(asc(S.comments.createdAt)),
+      db.select().from(S.activities).where(eq(S.activities.userId, userId)).orderBy(desc(S.activities.createdAt)).limit(100),
       db.select().from(S.notifications).where(eq(S.notifications.userId, userId)).orderBy(desc(S.notifications.createdAt)).limit(50),
     ]);
 
@@ -85,6 +88,7 @@ export async function getWorkspace(userId: string): Promise<WorkspaceData> {
     status: t.status,
     dueDate: t.dueDate,
     completed: t.completed,
+    completedAt: t.completedAt?.toISOString(),
     subtasks: subtaskRows.filter((s) => s.taskId === t.id).map((s) => ({ id: s.id, title: s.title, completed: s.completed })),
     comments: commentRows
       .filter((c) => c.taskId === t.id)

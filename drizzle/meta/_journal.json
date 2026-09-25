@@ -15,6 +15,27 @@
       "when": 1790362035442,
       "tag": "0001_loud_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790365267602,
+      "tag": "0002_past_pandemic",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790365388179,
+      "tag": "0003_uneven_newton_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790365557732,
+      "tag": "0004_smiling_hellcat",
+      "breakpoints": true
     }
   ]
 }

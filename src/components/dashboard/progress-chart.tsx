@@ -7,43 +7,21 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { easeApple } from '@/lib/motion';
 import { useStore } from '@/lib/store';
 import { today } from '@/lib/utils';
+import { closedPerBucket, completionAt, dayBuckets } from '@/lib/history';
 
 type Range = '7d' | '30d' | '90d';
 
 interface Point {
   label: string;
-  progress: number; // cumulative portfolio progress, %
+  progress: number; // share of tasks done by then, %
   closed: number; // tasks closed in the bucket
 }
 
-// Shape of the portfolio's recent history (oldest → today). Labels are derived from today's date.
-const SERIES: Record<Range, { step: number; points: Omit<Point, 'label'>[] }> = {
-  '7d': {
-    step: 1,
-    points: [
-      { progress: 61, closed: 3 },
-      { progress: 63, closed: 5 },
-      { progress: 63, closed: 0 },
-      { progress: 64, closed: 1 },
-      { progress: 67, closed: 6 },
-      { progress: 70, closed: 7 },
-      { progress: 72, closed: 4 },
-    ],
-  },
-  '30d': {
-    step: 3,
-    points: [38, 41, 43, 47, 50, 52, 55, 59, 63, 67, 72].map((progress, i) => ({
-      progress,
-      closed: [9, 7, 5, 11, 8, 6, 10, 12, 9, 13, 11][i],
-    })),
-  },
-  '90d': {
-    step: 7,
-    points: [8, 12, 15, 19, 24, 27, 31, 36, 40, 46, 52, 60, 72].map((progress, i) => ({
-      progress,
-      closed: [14, 18, 12, 21, 25, 17, 22, 28, 24, 30, 27, 33, 36][i],
-    })),
-  },
+// Buckets per range (oldest → today) and how many days each one spans.
+const RANGES: Record<Range, { count: number; step: number }> = {
+  '7d': { count: 7, step: 1 },
+  '30d': { count: 11, step: 3 },
+  '90d': { count: 13, step: 7 },
 };
 
 function labelFor(range: Range, daysAgo: number): string {
@@ -66,8 +44,12 @@ function smoothPath(pts: [number, number][]) {
     const p2 = pts[i + 1];
     const p3 = pts[i + 2] ?? p2;
     const t = 0.18;
-    const c1 = [p1[0] + (p2[0] - p0[0]) * t, p1[1] + (p2[1] - p0[1]) * t];
-    const c2 = [p2[0] - (p3[0] - p1[0]) * t, p2[1] - (p3[1] - p1[1]) * t];
+    // Control points stay between the two ends vertically, so the curve never overshoots (no dips below 0%).
+    const lo = Math.min(p1[1], p2[1]);
+    const hi = Math.max(p1[1], p2[1]);
+    const clamp = (y: number) => Math.min(hi, Math.max(lo, y));
+    const c1 = [p1[0] + (p2[0] - p0[0]) * t, clamp(p1[1] + (p2[1] - p0[1]) * t)];
+    const c2 = [p2[0] - (p3[0] - p1[0]) * t, clamp(p2[1] - (p3[1] - p1[1]) * t)];
     d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
   }
   return d;
@@ -89,20 +71,20 @@ export function ProgressChart() {
     return () => ro.disconnect();
   }, []);
 
-  // History is stored as a shape; the last point is pinned to today's live portfolio average
-  // so the chart always agrees with the rings above it.
-  const { projects } = useStore();
-  const live = projects.filter((p) => p.status !== 'archivado' && p.status !== 'completado');
-  const current = live.length ? Math.round(live.reduce((a, p) => a + p.progress, 0) / live.length) : 0;
+  // Rebuilt from each task's creation and completion dates: at every point, the share of the
+  // tasks that existed then which were already done.
+  const { tasks } = useStore();
   const points: Point[] = useMemo(() => {
-    const { step, points: raw } = SERIES[range];
-    const last = raw[raw.length - 1].progress;
-    return raw.map((p, i) => ({
-      ...p,
-      label: labelFor(range, (raw.length - 1 - i) * step),
-      progress: Math.round((p.progress / last) * current),
+    const { count, step } = RANGES[range];
+    const buckets = dayBuckets(count, step);
+    const progress = completionAt(tasks, buckets);
+    const closed = closedPerBucket(tasks, buckets);
+    return buckets.map((_, i) => ({
+      label: labelFor(range, (count - 1 - i) * step),
+      progress: progress[i],
+      closed: closed[i],
     }));
-  }, [range, current]);
+  }, [range, tasks]);
   const { coords, line, area, min, max } = useMemo(() => {
     const values = points.map((p) => p.progress);
     const lo = Math.max(0, Math.floor((Math.min(...values) - 6) / 10) * 10);
@@ -146,7 +128,7 @@ export function ProgressChart() {
     <section className="surface h-full p-5 sm:p-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-footnote font-medium text-ink-2">Avance acumulado de la cartera</p>
+          <p className="text-footnote font-medium text-ink-2">Tareas completadas (acumulado)</p>
           <div className="mt-1 flex items-baseline gap-2">
             <AnimatedNumber value={point.progress} suffix="%" className="text-[34px] leading-none font-semibold tracking-[-0.04em] text-ink" />
             <span className="text-[13px] font-medium text-green-ink">

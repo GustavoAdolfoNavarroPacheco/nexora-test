@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Building2, UserRound, Bell, Lock, SunMoon, Check as CheckIcon, RotateCcw } from 'lucide-react';
+import { Building2, UserRound, Bell, Lock, SunMoon, Check as CheckIcon } from 'lucide-react';
 import { useStore, type ThemeMode } from '@/lib/store';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { AlertDialog } from '@/components/ui/alert-dialog';
 import { SecuritySettings } from '@/components/auth/security-settings';
+import { NexoraMark } from '@/components/ui/nexora-mark';
 import { spring, easeApple } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -73,11 +73,9 @@ function ThemePreview({ mode }: { mode: ThemeMode }) {
 }
 
 export default function SettingsPage() {
-  const { currentUser, theme, setTheme, addToast, resetToDefaults } = useStore();
+  const { currentUser, theme, setTheme, addToast } = useStore();
   const [section, setSection] = useState<Section>('general');
-  const [resetOpen, setResetOpen] = useState(false);
 
-  const [workspaceName, setWorkspaceName] = useState('Acme Corp');
   const [name, setName] = useState(currentUser.name);
   const [role, setRole] = useState(currentUser.role);
   const [prefs, setPrefs] = useState({ tasks: true, mentions: true, deadlines: true, weekly: false });
@@ -130,27 +128,23 @@ export default function SettingsPage() {
           >
             {section === 'general' && (
               <>
-                <form onSubmit={(e) => save(e, 'Espacio de trabajo')} className="space-y-3">
-                  <Group title="Espacio de trabajo" footer="El dominio está ligado al plan Enterprise y no se puede cambiar desde aquí.">
-                    <div className="space-y-4 p-4 sm:p-5">
-                      <Input label="Nombre" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} />
-                      <Input label="Dominio" defaultValue="acmecorp.nexora.app" disabled />
+                <Group
+                  title="Tu espacio de trabajo"
+                  footer="Los proyectos, tareas, comentarios y actividad que creas solo los ves tú. Otras cuentas tienen su propio espacio."
+                >
+                  <div className="flex items-center gap-3.5 px-4 py-3.5 sm:px-5">
+                    <NexoraMark className="h-9 w-9 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] text-ink">Espacio de {currentUser.name.split(/\s+/)[0]}</p>
+                      <p className="truncate text-[12px] text-ink-2">{currentUser.email}</p>
                     </div>
-                  </Group>
-                  <div className="flex justify-end">
-                    <Button type="submit">Guardar</Button>
-                  </div>
-                </form>
-
-                <Group title="Datos de demostración" footer="Vuelve a los proyectos, tareas y actividad originales. Tus cambios se perderán.">
-                  <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
-                    <p className="text-[14px] text-ink">Restaurar datos originales</p>
-                    <Button variant="danger" size="sm" onClick={() => setResetOpen(true)}>
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Restaurar
-                    </Button>
+                    <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-fill-2 px-2.5 py-1 text-[11px] font-medium text-ink-2">
+                      <Lock className="h-3 w-3" />
+                      Privado
+                    </span>
                   </div>
                 </Group>
+
               </>
             )}
 
@@ -240,17 +234,6 @@ export default function SettingsPage() {
         </AnimatePresence>
       </div>
 
-      <AlertDialog
-        isOpen={resetOpen}
-        title="¿Restaurar los datos originales?"
-        message="Se perderán los proyectos, tareas y comentarios que hayas creado o cambiado."
-        confirmLabel="Restaurar"
-        onCancel={() => setResetOpen(false)}
-        onConfirm={() => {
-          resetToDefaults();
-          setResetOpen(false);
-        }}
-      />
     </div>
   );
 }

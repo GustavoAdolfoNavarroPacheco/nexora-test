@@ -64,6 +64,8 @@ export interface Task {
   status: TaskStatus;
   dueDate: string;
   completed: boolean;
+  /** ISO instant it was marked done; absent while open. */
+  completedAt?: string;
   subtasks: Subtask[];
   comments: TaskComment[];
   createdAt: string;
