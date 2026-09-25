@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Segmented } from '@/components/ui/segmented';
 import { Stagger, StaggerItem } from '@/components/ui/reveal';
 import { easeApple } from '@/lib/motion';
-import { cn, daysUntil, firstName, formatLongDate, REFERENCE_DATE } from '@/lib/utils';
+import { cn, daysUntil, firstName, formatLongDate, today } from '@/lib/utils';
 import type { ActivityEvent } from '@/lib/types';
 
 type Filter = 'todos' | 'project' | 'task' | 'team';
@@ -25,7 +25,7 @@ function dayLabel(timestamp: string): string {
   const d = new Date(timestamp);
   if (isNaN(d.getTime())) return 'Anteriores';
   const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const diff = daysUntil(iso, REFERENCE_DATE);
+  const diff = daysUntil(iso, today());
   if (diff >= 0) return 'Hoy';
   if (diff === -1) return 'Ayer';
   const label = formatLongDate(d);

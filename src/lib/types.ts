@@ -14,8 +14,6 @@ export interface User {
   role: string;
   department: string;
   status: MemberStatus;
-  activeProjectsCount: number;
-  pendingTasksCount: number;
 }
 
 export interface Milestone {

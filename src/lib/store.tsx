@@ -12,15 +12,8 @@ import {
   TaskStatus,
   Milestone,
 } from './types';
-import {
-  initialProjects,
-  initialTasks,
-  initialActivities,
-  initialNotifications,
-  mockUsers,
-  currentUser,
-} from './mock-data';
-import { getTaskStatusMeta } from './utils';
+import type { MutationResult, WorkspaceData } from './workspace';
+import { getTaskStatusMeta, setToday } from './utils';
 
 export interface ToastMessage {
   id: string;
@@ -36,6 +29,31 @@ export interface CreateTaskDefaults {
   status?: TaskStatus;
 }
 
+type ProjectInput = {
+  name: string;
+  description: string;
+  clientOrArea: string;
+  managerId: string;
+  teamIds: string[];
+  priority: Priority;
+  startDate: string;
+  dueDate: string;
+  status: ProjectStatus;
+};
+
+type TaskInput = {
+  title: string;
+  description: string;
+  projectId: string;
+  assigneeId: string;
+  priority: Priority;
+  dueDate: string;
+  status: TaskStatus;
+};
+
+type EditableProject = Partial<Pick<Project, 'name' | 'description' | 'clientOrArea' | 'priority' | 'status' | 'startDate' | 'dueDate'>>;
+type EditableTask = Partial<Pick<Task, 'title' | 'description' | 'priority' | 'status' | 'dueDate'>>;
+
 interface StoreContextType {
   projects: Project[];
   tasks: Task[];
@@ -50,34 +68,17 @@ interface StoreContextType {
   isCreateTaskOpen: boolean;
   createTaskDefaults: CreateTaskDefaults;
   selectedTaskId: string | null;
-  addProject: (data: {
-    name: string;
-    description: string;
-    clientOrArea: string;
-    managerId: string;
-    teamIds: string[];
-    priority: Priority;
-    startDate: string;
-    dueDate: string;
-    status: ProjectStatus;
-  }) => Project;
-  updateProject: (id: string, partial: Partial<Project>) => void;
+  addProject: (data: ProjectInput) => Project;
+  updateProject: (id: string, partial: EditableProject) => void;
   deleteProject: (id: string) => void;
   archiveProject: (id: string) => void;
   toggleMilestone: (projectId: string, milestoneId: string) => void;
   addMilestone: (projectId: string, data: { title: string; date: string }) => void;
-  addTask: (data: {
-    title: string;
-    description: string;
-    projectId: string;
-    assigneeId: string;
-    priority: Priority;
-    dueDate: string;
-    status: TaskStatus;
-  }) => Task | null;
-  updateTask: (id: string, partial: Partial<Task>) => void;
+  addTask: (data: TaskInput) => Task | null;
+  updateTask: (id: string, partial: EditableTask) => void;
   toggleTaskComplete: (id: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
+  addSubtask: (taskId: string, title: string) => void;
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   addCommentToTask: (taskId: string, content: string) => void;
   markNotificationAsRead: (id: string) => void;
@@ -89,17 +90,33 @@ interface StoreContextType {
   setIsCreateProjectOpen: (open: boolean) => void;
   setIsCreateTaskOpen: (open: boolean, defaults?: CreateTaskDefaults) => void;
   setSelectedTaskId: (id: string | null) => void;
-  resetToDefaults: () => void;
+  resetToDefaults: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-const STORAGE_KEY_PREFIX = 'nexora_saas_';
+const THEME_KEY = 'nexora_saas_theme';
 
-let globalIdCounter = 1000;
 export function createId(prefix: string): string {
-  globalIdCounter += 1;
-  return `${prefix}-${Date.now()}-${globalIdCounter}`;
+  const random =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  return `${prefix}-${random}`;
+}
+
+class ApiError extends Error {}
+
+async function api<T = MutationResult>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method,
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: 'no-store',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError((data as { error?: string }).error ?? `Error ${res.status}`);
+  return data as T;
 }
 
 function progressFor(projectId: string, allTasks: Task[]): number | null {
@@ -108,29 +125,16 @@ function progressFor(projectId: string, allTasks: Task[]): number | null {
   return Math.round((own.filter((t) => t.completed).length / own.length) * 100);
 }
 
-function readStorage<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${key}`);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
+export function StoreProvider({ initialData, children }: { initialData: WorkspaceData; children: React.ReactNode }) {
+  // Same value on server and client render, so date-relative labels never mismatch on hydration.
+  setToday(initialData.today);
 
-function writeStorage(key: string, value: unknown) {
-  try {
-    localStorage.setItem(`${STORAGE_KEY_PREFIX}${key}`, typeof value === 'string' ? value : JSON.stringify(value));
-  } catch {
-    // Storage full or blocked — the session keeps working in memory.
-  }
-}
-
-export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [activities, setActivities] = useState<ActivityEvent[]>(initialActivities);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
-  const [users] = useState<User[]>(mockUsers);
+  const [projects, setProjects] = useState<Project[]>(initialData.projects);
+  const [tasks, setTasks] = useState<Task[]>(initialData.tasks);
+  const [activities, setActivities] = useState<ActivityEvent[]>(initialData.activities);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(initialData.notifications);
+  const [users, setUsers] = useState<User[]>(initialData.users);
+  const [currentUserId, setCurrentUserId] = useState(initialData.currentUserId);
   const [theme, setThemeState] = useState<ThemeMode>('light');
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -140,54 +144,65 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const [hydrated, setHydrated] = useState(false);
   const toastTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pending = useRef(0);
+  const lastSync = useRef(0);
 
-  // Restore the persisted workspace once on the client.
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    const savedProjects = readStorage<Project[]>('projects');
-    if (savedProjects) setProjects(savedProjects);
-    const savedTasks = readStorage<Task[]>('tasks');
-    if (savedTasks) setTasks(savedTasks);
-    const savedActivities = readStorage<ActivityEvent[]>('activities');
-    if (savedActivities) setActivities(savedActivities);
-    const savedNotifications = readStorage<NotificationItem[]>('notifications');
-    if (savedNotifications) setNotifications(savedNotifications);
+  const currentUser = users.find((u) => u.id === currentUserId) ?? users[0];
+
+  const applyWorkspace = useCallback((data: WorkspaceData) => {
+    setToday(data.today);
+    setProjects(data.projects);
+    setTasks(data.tasks);
+    setActivities(data.activities);
+    setNotifications(data.notifications);
+    setUsers(data.users);
+    setCurrentUserId(data.currentUserId);
+    lastSync.current = Date.now();
+  }, []);
+
+  const reload = useCallback(async () => {
     try {
-      const savedTheme = localStorage.getItem(`${STORAGE_KEY_PREFIX}theme`) as ThemeMode | null;
-      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') setThemeState(savedTheme);
+      applyWorkspace(await api<WorkspaceData>('GET', '/api/workspace'));
+    } catch {
+      // Keep what is on screen; the next mutation or focus will try again.
+    }
+  }, [applyWorkspace]);
+
+  // Theme preference stays in this browser.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(THEME_KEY) as ThemeMode | null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (saved === 'light' || saved === 'dark' || saved === 'system') setThemeState(saved);
     } catch {}
-    setHydrated(true);
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   useEffect(() => {
-    if (hydrated) writeStorage('projects', projects);
-  }, [projects, hydrated]);
-  useEffect(() => {
-    if (hydrated) writeStorage('tasks', tasks);
-  }, [tasks, hydrated]);
-  useEffect(() => {
-    if (hydrated) writeStorage('activities', activities);
-  }, [activities, hydrated]);
-  useEffect(() => {
-    if (hydrated) writeStorage('notifications', notifications);
-  }, [notifications, hydrated]);
-
-  // Keep the <html> class in sync with the chosen theme (and with the OS when set to "system").
-  useEffect(() => {
     const root = document.documentElement;
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      const dark = theme === 'dark' || (theme === 'system' && media.matches);
-      root.classList.toggle('dark', dark);
-    };
+    const apply = () => root.classList.toggle('dark', theme === 'dark' || (theme === 'system' && media.matches));
     apply();
     if (theme !== 'system') return;
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
   }, [theme]);
+
+  // Pick up changes made from other tabs or teammates when the window regains focus.
+  useEffect(() => {
+    lastSync.current = Date.now();
+    const onFocus = () => {
+      if (document.visibilityState !== 'visible' || pending.current > 0) return;
+      if (Date.now() - lastSync.current < 20_000) return;
+      void reload();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [reload]);
 
   useEffect(() => {
     const timers = toastTimers.current;
@@ -196,7 +211,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (next: ThemeMode) => {
     setThemeState(next);
-    writeStorage('theme', next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {}
   };
 
   const removeToast = useCallback((id: string) => {
@@ -210,25 +227,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (toast: Omit<ToastMessage, 'id'>) => {
       const id = createId('toast');
       setToasts((prev) => [...prev.slice(-2), { ...toast, id, type: toast.type || 'info' }]);
-      toastTimers.current.set(id, setTimeout(() => removeToast(id), 4200));
+      toastTimers.current.set(id, setTimeout(() => removeToast(id), toast.type === 'error' ? 6000 : 4200));
     },
     [removeToast]
   );
 
-  const logActivity = (event: Omit<ActivityEvent, 'id' | 'user' | 'timestamp' | 'timeAgo'>) => {
-    setActivities((prev) => [
-      {
-        ...event,
-        id: createId('act'),
-        user: currentUser,
-        timestamp: new Date().toISOString(),
-        timeAgo: 'Justo ahora',
-      },
-      ...prev,
-    ]);
+  /**
+   * Sends a mutation after the optimistic update is already on screen. Server-side effects
+   * (activity entries, recomputed progress) are merged in; on failure the real state is reloaded.
+   */
+  const sync = (request: Promise<MutationResult>) => {
+    pending.current += 1;
+    request
+      .then((result) => {
+        if (result.activity) {
+          const entry = result.activity;
+          setActivities((prev) => [entry, ...prev.filter((a) => a.id !== entry.id)]);
+        }
+        if (result.progress?.length) {
+          const byId = new Map(result.progress.map((p) => [p.projectId, p.progress]));
+          setProjects((prev) => prev.map((p) => (byId.has(p.id) ? { ...p, progress: byId.get(p.id)! } : p)));
+        }
+      })
+      .catch((err: unknown) => {
+        addToast({
+          title: 'No se guardó el cambio',
+          description: err instanceof ApiError ? err.message : 'Revisa tu conexión e inténtalo de nuevo.',
+          type: 'error',
+        });
+        void reload();
+      })
+      .finally(() => {
+        pending.current -= 1;
+      });
   };
 
-  /** Commits a new task list and recomputes progress for the touched projects. */
+  /** Applies a new task list locally and recomputes progress for the touched projects. */
   const commitTasks = (next: Task[], touchedProjectIds: string[]) => {
     setTasks(next);
     setProjects((prev) =>
@@ -240,12 +274,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // ------------------------------------------------------------------ projects
+
   const addProject: StoreContextType['addProject'] = (data) => {
     const manager = users.find((u) => u.id === data.managerId) || currentUser;
     const team = users.filter((u) => data.teamIds.includes(u.id));
     if (!team.some((u) => u.id === manager.id)) team.unshift(manager);
 
-    const newProject: Project = {
+    const milestones: Milestone[] = [
+      { id: createId('m'), title: 'Arranque y acuerdos de alcance', date: data.startDate, completed: true },
+      { id: createId('m'), title: 'Entrega final', date: data.dueDate, completed: false },
+    ];
+    const project: Project = {
       id: createId('proj'),
       name: data.name,
       description: data.description,
@@ -257,47 +297,60 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       startDate: data.startDate,
       dueDate: data.dueDate,
       status: data.status,
-      milestones: [
-        { id: createId('m'), title: 'Arranque y acuerdos de alcance', date: data.startDate, completed: true },
-        { id: createId('m'), title: 'Entrega final', date: data.dueDate, completed: false },
-      ],
+      milestones,
       createdAt: new Date().toISOString(),
     };
 
-    setProjects((prev) => [newProject, ...prev]);
-    logActivity({ action: 'creó el proyecto', entity: newProject.name, entityType: 'project', projectId: newProject.id });
-    addToast({ title: 'Proyecto creado', description: newProject.name, type: 'success' });
-    return newProject;
+    setProjects((prev) => [project, ...prev]);
+    addToast({ title: 'Proyecto creado', description: project.name, type: 'success' });
+    sync(
+      api('POST', '/api/projects', {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        clientOrArea: project.clientOrArea,
+        managerId: manager.id,
+        teamIds: team.map((u) => u.id),
+        priority: project.priority,
+        status: project.status,
+        startDate: project.startDate,
+        dueDate: project.dueDate,
+        milestones,
+      })
+    );
+    return project;
   };
 
-  const updateProject = (id: string, partial: Partial<Project>) => {
+  const patchProject = (id: string, partial: EditableProject) => {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...partial } : p)));
-    addToast({ title: 'Cambios guardados', description: partial.name ?? undefined, type: 'success' });
+    if (partial.name) {
+      setTasks((prev) => prev.map((t) => (t.projectId === id ? { ...t, projectName: partial.name! } : t)));
+    }
+    sync(api('PATCH', `/api/projects/${id}`, partial));
+  };
+
+  const updateProject = (id: string, partial: EditableProject) => {
+    patchProject(id, partial);
+    addToast({ title: 'Cambios guardados', description: partial.name, type: 'success' });
+  };
+
+  const archiveProject = (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    patchProject(id, { status: 'archivado' });
+    addToast({ title: 'Proyecto archivado', description: target?.name, type: 'info' });
   };
 
   const deleteProject = (id: string) => {
     const target = projects.find((p) => p.id === id);
     setProjects((prev) => prev.filter((p) => p.id !== id));
     setTasks((prev) => prev.filter((t) => t.projectId !== id));
-    if (target) {
-      addToast({
-        title: 'Proyecto eliminado',
-        description: `${target.name} y sus tareas`,
-        type: 'warning',
-      });
-    }
-  };
-
-  const archiveProject = (id: string) => {
-    const target = projects.find((p) => p.id === id);
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'archivado' } : p)));
-    addToast({ title: 'Proyecto archivado', description: target?.name, type: 'info' });
+    if (target) addToast({ title: 'Proyecto eliminado', description: `${target.name} y sus tareas`, type: 'warning' });
+    sync(api('DELETE', `/api/projects/${id}`));
   };
 
   const toggleMilestone = (projectId: string, milestoneId: string) => {
-    const project = projects.find((p) => p.id === projectId);
-    const milestone = project?.milestones.find((m) => m.id === milestoneId);
-    if (!project || !milestone) return;
+    const milestone = projects.find((p) => p.id === projectId)?.milestones.find((m) => m.id === milestoneId);
+    if (!milestone) return;
     const completed = !milestone.completed;
     setProjects((prev) =>
       prev.map((p) =>
@@ -306,9 +359,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           : p
       )
     );
-    if (completed) {
-      logActivity({ action: 'cumplió el hito', entity: milestone.title, entityType: 'project', projectId });
-    }
+    sync(api('PATCH', `/api/milestones/${milestoneId}`, { completed }));
   };
 
   const addMilestone = (projectId: string, data: { title: string; date: string }) => {
@@ -321,14 +372,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       )
     );
     addToast({ title: 'Hito añadido', description: data.title, type: 'success' });
+    sync(api('POST', `/api/projects/${projectId}/milestones`, { id: milestone.id, title: milestone.title, date: milestone.date }));
   };
 
+  // ------------------------------------------------------------------ tasks
+
   const addTask: StoreContextType['addTask'] = (data) => {
-    const project = projects.find((p) => p.id === data.projectId) || projects[0];
+    const project = projects.find((p) => p.id === data.projectId);
     if (!project) return null;
     const assignee = users.find((u) => u.id === data.assigneeId) || currentUser;
 
-    const newTask: Task = {
+    const task: Task = {
       id: createId('tsk'),
       projectId: project.id,
       projectName: project.name,
@@ -344,13 +398,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
     };
 
-    commitTasks([newTask, ...tasks], [project.id]);
-    logActivity({ action: 'creó la tarea', entity: newTask.title, entityType: 'task', projectId: project.id });
+    commitTasks([task, ...tasks], [project.id]);
     addToast({ title: 'Tarea creada', description: `En ${project.name}`, type: 'success' });
-    return newTask;
+    sync(
+      api('POST', '/api/tasks', {
+        id: task.id,
+        projectId: task.projectId,
+        title: task.title,
+        description: task.description,
+        assigneeId: assignee.id,
+        priority: task.priority,
+        status: task.status,
+        dueDate: task.dueDate,
+      })
+    );
+    return task;
   };
 
-  const updateTask = (id: string, partial: Partial<Task>) => {
+  const updateTask = (id: string, partial: EditableTask) => {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
     const next = tasks.map((t) => {
@@ -360,6 +425,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
     commitTasks(next, [target.projectId]);
+    sync(api('PATCH', `/api/tasks/${id}`, partial));
   };
 
   const toggleTaskComplete = (id: string) => {
@@ -371,17 +437,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       tasks.map((t) => (t.id === id ? { ...t, completed, status } : t)),
       [target.projectId]
     );
-    logActivity({
-      action: completed ? 'completó la tarea' : 'reabrió la tarea',
-      entity: target.title,
-      entityType: 'task',
-      projectId: target.projectId,
-    });
     addToast({
       title: completed ? 'Tarea completada' : 'Tarea reabierta',
       description: target.title,
       type: completed ? 'success' : 'info',
     });
+    sync(api('PATCH', `/api/tasks/${id}`, { status }));
   };
 
   const updateTaskStatus = (id: string, status: TaskStatus) => {
@@ -396,37 +457,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       description: target.title,
       type: status === 'completada' ? 'success' : 'info',
     });
+    sync(api('PATCH', `/api/tasks/${id}`, { status }));
+  };
+
+  const addSubtask = (taskId: string, title: string) => {
+    const text = title.trim();
+    if (!text) return;
+    const subtask = { id: createId('sub'), title: text, completed: false };
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, subtasks: [...t.subtasks, subtask] } : t)));
+    sync(api('POST', `/api/tasks/${taskId}/subtasks`, { id: subtask.id, title: subtask.title }));
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
+    const subtask = tasks.find((t) => t.id === taskId)?.subtasks.find((s) => s.id === subtaskId);
+    if (!subtask) return;
+    const completed = !subtask.completed;
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId
-          ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s)) }
-          : t
+        t.id === taskId ? { ...t, subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed } : s)) } : t
       )
     );
+    sync(api('PATCH', `/api/subtasks/${subtaskId}`, { completed }));
   };
 
   const addCommentToTask = (taskId: string, content: string) => {
     const text = content.trim();
     if (!text) return;
-    const comment = {
-      id: createId('comm'),
-      taskId,
-      author: currentUser,
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
+    const comment = { id: createId('comm'), taskId, author: currentUser, content: text, createdAt: new Date().toISOString() };
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, comments: [...t.comments, comment] } : t)));
+    sync(api('POST', `/api/tasks/${taskId}/comments`, { id: comment.id, content: comment.content }));
   };
 
+  // ------------------------------------------------------------------ notifications
+
   const markNotificationAsRead = (id: string) => {
+    if (notifications.find((n) => n.id === id)?.read) return;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    sync(api('PATCH', `/api/notifications/${id}`, { read: true }));
   };
 
   const markAllNotificationsAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    sync(api('POST', '/api/notifications/read-all'));
   };
 
   const setIsCreateTaskOpen = (open: boolean, defaults: CreateTaskDefaults = {}) => {
@@ -434,17 +506,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCreateTaskOpenState(open);
   };
 
-  const resetToDefaults = () => {
-    setProjects(initialProjects);
-    setTasks(initialTasks);
-    setActivities(initialActivities);
-    setNotifications(initialNotifications);
+  const resetToDefaults = async () => {
     try {
-      ['projects', 'tasks', 'activities', 'notifications'].forEach((k) =>
-        localStorage.removeItem(`${STORAGE_KEY_PREFIX}${k}`)
-      );
-    } catch {}
-    addToast({ title: 'Datos de demostración restaurados', type: 'info' });
+      applyWorkspace(await api<WorkspaceData>('POST', '/api/workspace/reset'));
+      addToast({ title: 'Datos de demostración restaurados', type: 'success' });
+    } catch (err) {
+      addToast({
+        title: 'No se pudieron restaurar los datos',
+        description: err instanceof ApiError ? err.message : undefined,
+        type: 'error',
+      });
+    }
   };
 
   return (
@@ -473,6 +545,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         updateTask,
         toggleTaskComplete,
         updateTaskStatus,
+        addSubtask,
         toggleSubtask,
         addCommentToTask,
         markNotificationAsRead,

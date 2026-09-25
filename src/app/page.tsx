@@ -10,7 +10,7 @@ import { ActiveProjectsList } from '@/components/dashboard/active-projects-list'
 import { UpcomingTasks } from '@/components/dashboard/upcoming-tasks';
 import { ProgressChart } from '@/components/dashboard/progress-chart';
 import { RecentActivityFeed } from '@/components/dashboard/recent-activity-feed';
-import { REFERENCE_DATE, firstName, formatLongDate, greetingFor } from '@/lib/utils';
+import { today, firstName, formatLongDate, greetingFor } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
-        eyebrow={formatLongDate(REFERENCE_DATE)}
+        eyebrow={formatLongDate(today())}
         title={
           <span suppressHydrationWarning>
             {greetingFor(new Date())}, {firstName(currentUser.name)}

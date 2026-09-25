@@ -13,33 +13,34 @@ import { SegmentedBar } from '@/components/ui/progress-bar';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Reveal, Stagger, StaggerItem } from '@/components/ui/reveal';
 import { easeApple } from '@/lib/motion';
-import { cn, elapsedShare, getTaskStatusMeta, isAtRisk, isOverdue, TASK_STATUSES, toneClasses, getProjectStatusMeta } from '@/lib/utils';
+import { cn, today, elapsedShare, getTaskStatusMeta, isAtRisk, isOverdue, TASK_STATUSES, toneClasses, getProjectStatusMeta } from '@/lib/utils';
 
 type Period = 'semana' | 'mes' | 'trimestre';
 
-// Tasks closed per bucket, as recorded by the workspace.
-const CLOSED: Record<Period, { label: string; value: number }[]> = {
-  semana: [
-    { label: 'J', value: 3 },
-    { label: 'V', value: 5 },
-    { label: 'S', value: 0 },
-    { label: 'D', value: 1 },
-    { label: 'L', value: 6 },
-    { label: 'M', value: 7 },
-    { label: 'X', value: 4 },
-  ],
-  mes: [
-    { label: 'S1', value: 21 },
-    { label: 'S2', value: 27 },
-    { label: 'S3', value: 24 },
-    { label: 'S4', value: 33 },
-  ],
-  trimestre: [
-    { label: 'Jul', value: 86 },
-    { label: 'Ago', value: 112 },
-    { label: 'Sep', value: 26 },
-  ],
+// Tasks closed per bucket (oldest → current). Labels are derived from today's date.
+const CLOSED: Record<Period, number[]> = {
+  semana: [3, 5, 0, 1, 6, 7, 4],
+  mes: [21, 27, 24, 33],
+  trimestre: [86, 112, 26],
 };
+
+function bucketLabels(period: Period): string[] {
+  const base = today();
+  const n = CLOSED[period].length;
+  return Array.from({ length: n }, (_, i) => {
+    const back = n - 1 - i;
+    if (period === 'mes') return `S${i + 1}`;
+    const d = new Date(base);
+    if (period === 'semana') {
+      d.setDate(d.getDate() - back);
+      return new Intl.DateTimeFormat('es-ES', { weekday: 'narrow' }).format(d);
+    }
+    d.setDate(1);
+    d.setMonth(d.getMonth() - back);
+    const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(d).replace('.', '');
+    return month.charAt(0).toUpperCase() + month.slice(1);
+  });
+}
 
 function ClosedChart() {
   const [period, setPeriod] = useState<Period>('semana');
@@ -47,7 +48,8 @@ function ClosedChart() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '0px 0px -10% 0px' });
 
-  const data = CLOSED[period];
+  const labels = bucketLabels(period);
+  const data = CLOSED[period].map((value, i) => ({ label: labels[i], value }));
   const max = Math.max(...data.map((d) => d.value), 1);
   const total = data.reduce((a, d) => a + d.value, 0);
   const avg = total / data.length;
@@ -99,7 +101,7 @@ function ClosedChart() {
           >
             {data.map((d, i) => (
               <button
-                key={d.label}
+                key={`${period}-${i}`}
                 onPointerEnter={() => setHover(i)}
                 onFocus={() => setHover(i)}
                 onBlur={() => setHover(null)}

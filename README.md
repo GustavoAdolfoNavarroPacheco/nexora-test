@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexora
 
-## Getting Started
+Gestión de proyectos y equipos con Next.js 16, Postgres en [Neon](https://neon.tech) y Drizzle ORM.
 
-First, run the development server:
+## Puesta en marcha
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Instala dependencias:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   ```bash
+   npm install
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. Copia `.env.example` a `.env.local` y pon tu cadena de conexión de Neon en `DATABASE_URL`.
+   `APP_TIMEZONE` define qué día es «hoy» para vencimientos y etiquetas como «Ayer».
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Crea las tablas y carga los datos de ejemplo:
 
-## Learn More
+   ```bash
+   npm run db:setup
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. Arranca el servidor de desarrollo y abre [http://localhost:3000](http://localhost:3000):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Base de datos
 
-## Deploy on Vercel
+| Script | Qué hace |
+| --- | --- |
+| `npm run db:generate` | Genera una migración SQL en `drizzle/` a partir de `src/server/db/schema.ts` |
+| `npm run db:migrate` | Aplica las migraciones pendientes en Neon |
+| `npm run db:seed` | Borra y vuelve a cargar el espacio de ejemplo (fechas desplazadas a hoy) |
+| `npm run db:setup` | `db:migrate` + `db:seed` |
+| `npm run db:studio` | Abre Drizzle Studio para explorar los datos |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Para cambiar el modelo: edita `schema.ts`, ejecuta `db:generate`, revisa el SQL generado y aplica con `db:migrate`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Arquitectura
+
+- `src/server/db/` — esquema Drizzle y cliente Neon (HTTP, sin pool de conexiones).
+- `src/server/workspace.ts` — lee todo el espacio de trabajo en una sola petición a Neon.
+- `src/server/mutations.ts` — escrituras; el avance de cada proyecto y el registro de actividad se calculan aquí, en la misma transacción.
+- `src/server/validation.ts` — validación de entrada con Zod.
+- `src/app/api/` — API REST (`/api/workspace`, `/api/projects`, `/api/tasks`, …).
+- `src/lib/store.tsx` — estado del cliente. Aplica los cambios al instante (optimista) y, si el servidor los rechaza, muestra un aviso y recarga el estado real.
+
+Aún no hay inicio de sesión: todas las peticiones actúan como el usuario definido en `src/server/config.ts`.

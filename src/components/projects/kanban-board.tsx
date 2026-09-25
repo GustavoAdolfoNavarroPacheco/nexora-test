@@ -8,8 +8,11 @@ import { useStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/avatar';
 import { PriorityMarks } from '@/components/ui/badge';
 import { Chevrons } from '@/components/ui/input';
+import { Dropdown } from '@/components/ui/dropdown';
 import { springSoft } from '@/lib/motion';
 import { cn, describeDue, getPriorityMeta, getTaskStatusMeta, TASK_STATUSES, toneClasses } from '@/lib/utils';
+
+const STATUS_OPTIONS = TASK_STATUSES.map((s) => ({ value: s, label: getTaskStatusMeta(s).label }));
 
 function KanbanCard({ task, onDragStart, dragging }: { task: Task; onDragStart: (id: string) => void; dragging: boolean }) {
   const { setSelectedTaskId, updateTaskStatus } = useStore();
@@ -69,21 +72,17 @@ function KanbanCard({ task, onDragStart, dragging }: { task: Task; onDragStart: 
             </span>
           </div>
           {/* Touch devices can't drag — this select moves the card instead. */}
-          <label className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-            <span className="sr-only">Mover a</span>
-            <select
+          <span className="relative shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <Dropdown
+              label="Mover a"
               value={task.status}
-              onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
-              className="h-7 appearance-none rounded-full bg-fill-2 pr-6 pl-2.5 text-[11px] font-medium text-ink-2 outline-none"
-            >
-              {TASK_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {getTaskStatusMeta(s).label}
-                </option>
-              ))}
-            </select>
-            <Chevrons className="pointer-events-none absolute top-1/2 right-2 h-3 w-2 -translate-y-1/2 text-ink-3" />
-          </label>
+              onChange={(v) => updateTaskStatus(task.id, v as TaskStatus)}
+              options={STATUS_OPTIONS}
+              align="end"
+              triggerClassName="h-7 rounded-full bg-fill-2 pr-6 pl-2.5 text-[11px] font-medium text-ink-2 outline-none transition-colors hover:text-ink aria-expanded:text-ink"
+              adornment={<Chevrons className="pointer-events-none absolute top-1/2 right-2 h-3 w-2 -translate-y-1/2 text-ink-3" />}
+            />
+          </span>
         </div>
       </div>
     </motion.div>

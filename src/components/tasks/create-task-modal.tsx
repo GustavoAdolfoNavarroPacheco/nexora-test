@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/sheet';
 import { Input, Select, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Priority, TaskStatus } from '@/lib/types';
-import { getTaskStatusMeta, TASK_STATUSES } from '@/lib/utils';
+import { getTaskStatusMeta, TASK_STATUSES, todayISO } from '@/lib/utils';
 
 const FORM_ID = 'create-task-form';
 
@@ -20,7 +20,7 @@ function CreateTaskForm({ onDone }: { onDone: () => void }) {
   const [assigneeId, setAssigneeId] = useState(currentUser.id);
   const [priority, setPriority] = useState<Priority>('media');
   const [status, setStatus] = useState<TaskStatus>(createTaskDefaults.status ?? 'pendiente');
-  const [dueDate, setDueDate] = useState('2026-09-15');
+  const [dueDate, setDueDate] = useState(() => todayISO(7));
   const [error, setError] = useState('');
 
   const submit = (e: React.FormEvent) => {
@@ -51,7 +51,7 @@ function CreateTaskForm({ onDone }: { onDone: () => void }) {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
-      <Select label="Proyecto" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+      <Select label="Proyecto" value={projectId} onValueChange={(v) => setProjectId(v)}>
         {openProjects.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}
@@ -59,7 +59,7 @@ function CreateTaskForm({ onDone }: { onDone: () => void }) {
         ))}
       </Select>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Select label="Responsable" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+        <Select label="Responsable" value={assigneeId} onValueChange={(v) => setAssigneeId(v)}>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
@@ -67,13 +67,13 @@ function CreateTaskForm({ onDone }: { onDone: () => void }) {
           ))}
         </Select>
         <Input type="date" label="Fecha límite" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        <Select label="Prioridad" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+        <Select label="Prioridad" value={priority} onValueChange={(v) => setPriority(v as Priority)}>
           <option value="baja">Baja</option>
           <option value="media">Media</option>
           <option value="alta">Alta</option>
           <option value="critica">Crítica</option>
         </Select>
-        <Select label="Estado" value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)}>
+        <Select label="Estado" value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
           {TASK_STATUSES.map((s) => (
             <option key={s} value={s}>
               {getTaskStatusMeta(s).label}

@@ -6,8 +6,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** The demo workspace lives on this day; every "due in" / "overdue" calculation is relative to it. */
-export const REFERENCE_DATE = new Date('2026-09-02T12:00:00');
+// "Today" comes from the server (workspace time zone) so server and client renders agree.
+let referenceDay: string | null = null;
+
+export function setToday(isoDay: string) {
+  referenceDay = isoDay;
+}
+
+/** Local noon of the workspace's current day. */
+export function today(): Date {
+  if (referenceDay) return new Date(`${referenceDay}T12:00:00`);
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+}
+
+/** Today's date plus `offset` days, as YYYY-MM-DD — for form defaults. */
+export function todayISO(offset = 0): string {
+  const d = today();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export type Tone = 'gray' | 'blue' | 'green' | 'orange' | 'red' | 'purple';
 
@@ -67,7 +85,7 @@ export function formatTime(dateString: string): string {
   return new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(date);
 }
 
-export function daysUntil(dateString: string, from: Date = REFERENCE_DATE): number {
+export function daysUntil(dateString: string, from: Date = today()): number {
   const target = parseDay(dateString);
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const end = new Date(target.getFullYear(), target.getMonth(), target.getDate());

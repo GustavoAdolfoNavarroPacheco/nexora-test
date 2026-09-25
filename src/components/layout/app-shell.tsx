@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, MotionConfig } from 'motion/react';
 import { StoreProvider } from '@/lib/store';
+import type { WorkspaceData } from '@/lib/workspace';
 import { easeApple } from '@/lib/motion';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
@@ -15,11 +16,11 @@ import { CreateProjectModal } from '@/components/projects/create-project-modal';
 import { CreateTaskModal } from '@/components/tasks/create-task-modal';
 import { TaskDetailDrawer } from '@/components/tasks/task-detail-drawer';
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ initialData, children }: { initialData: WorkspaceData; children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <StoreProvider>
+    <StoreProvider initialData={initialData}>
       <MotionConfig reducedMotion="user">
         <SmoothScroll />
         <a

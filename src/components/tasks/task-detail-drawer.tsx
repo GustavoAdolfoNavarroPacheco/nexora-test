@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUp, FolderClosed, Plus } from 'lucide-react';
-import { useStore, createId } from '@/lib/store';
+import { useStore } from '@/lib/store';
 import { Drawer } from '@/components/ui/sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { Check } from '@/components/ui/check';
 import { Chevrons } from '@/components/ui/input';
+import { Dropdown, optionsFromChildren } from '@/components/ui/dropdown';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { spring, easeApple } from '@/lib/motion';
 import { cn, describeDue, firstName, formatTime, getTaskStatusMeta, TASK_STATUSES, toneClasses } from '@/lib/utils';
@@ -25,32 +26,30 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function InlineSelect({ value, onChange, label, children }: { value: string; onChange: (v: string) => void; label: string; children: React.ReactNode }) {
   return (
-    <span className="relative inline-flex items-center">
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-transparent pr-5 text-right text-[14px] text-ink-2 outline-none hover:text-ink"
-      >
-        {children}
-      </select>
-      <Chevrons className="pointer-events-none absolute right-0 h-3 w-2 text-ink-3" />
-    </span>
+    <Dropdown
+      label={label}
+      value={value}
+      onChange={onChange}
+      options={optionsFromChildren(children)}
+      align="end"
+      triggerClassName="rounded-[6px] bg-transparent pr-5 text-right text-[14px] text-ink-2 outline-none transition-colors hover:text-ink aria-expanded:text-ink"
+      adornment={<Chevrons className="pointer-events-none absolute right-0 h-3 w-2 text-ink-3" />}
+    />
   );
 }
 
 function TaskDetail({ task }: { task: Task }) {
-  const { currentUser, setSelectedTaskId, updateTask, toggleTaskComplete, toggleSubtask, addCommentToTask } = useStore();
+  const { currentUser, setSelectedTaskId, updateTask, toggleTaskComplete, addSubtask, toggleSubtask, addCommentToTask } = useStore();
   const [comment, setComment] = useState('');
   const [subtask, setSubtask] = useState('');
 
   const due = describeDue(task.dueDate, task.completed);
   const subDone = task.subtasks.filter((s) => s.completed).length;
 
-  const addSubtask = (e: React.FormEvent) => {
+  const submitSubtask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subtask.trim()) return;
-    updateTask(task.id, { subtasks: [...task.subtasks, { id: createId('sub'), title: subtask.trim(), completed: false }] });
+    addSubtask(task.id, subtask);
     setSubtask('');
   };
 
@@ -156,7 +155,7 @@ function TaskDetail({ task }: { task: Task }) {
             ))}
           </AnimatePresence>
         </ul>
-        <form onSubmit={addSubtask} className="mt-1 flex items-center gap-3 px-1">
+        <form onSubmit={submitSubtask} className="mt-1 flex items-center gap-3 px-1">
           <span className="flex h-5 w-5 shrink-0 items-center justify-center text-ink-3">
             <Plus className="h-4 w-4" />
           </span>

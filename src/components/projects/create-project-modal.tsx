@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Priority, ProjectStatus } from '@/lib/types';
 import { spring } from '@/lib/motion';
-import { cn, firstName } from '@/lib/utils';
+import { cn, firstName, todayISO } from '@/lib/utils';
 
 const FORM_ID = 'create-project-form';
 
@@ -32,8 +32,8 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
   const [teamIds, setTeamIds] = useState<string[]>([currentUser.id]);
   const [priority, setPriority] = useState<Priority>('alta');
   const [status, setStatus] = useState<ProjectStatus>('activo');
-  const [startDate, setStartDate] = useState('2026-09-02');
-  const [dueDate, setDueDate] = useState('2026-10-15');
+  const [startDate, setStartDate] = useState(() => todayISO());
+  const [dueDate, setDueDate] = useState(() => todayISO(42));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const clearError = (key: string) => errors[key] && setErrors({ ...errors, [key]: '' });
@@ -96,20 +96,20 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
 
       <FormGroup title="Quién">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Select label="Responsable" value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+          <Select label="Responsable" value={managerId} onValueChange={(v) => setManagerId(v)}>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
               </option>
             ))}
           </Select>
-          <Select label="Prioridad" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+          <Select label="Prioridad" value={priority} onValueChange={(v) => setPriority(v as Priority)}>
             <option value="baja">Baja</option>
             <option value="media">Media</option>
             <option value="alta">Alta</option>
             <option value="critica">Crítica</option>
           </Select>
-          <Select label="Estado" value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus)}>
+          <Select label="Estado" value={status} onValueChange={(v) => setStatus(v as ProjectStatus)}>
             <option value="activo">Activo</option>
             <option value="planificacion">Planificación</option>
             <option value="en_pausa">En pausa</option>

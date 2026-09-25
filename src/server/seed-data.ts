@@ -1,4 +1,4 @@
-import { User, Project, Task, ActivityEvent, NotificationItem } from './types';
+import { User, Project, Task, ActivityEvent, NotificationItem } from '@/lib/types';
 
 export const currentUser: User = {
   id: 'usr-1',
@@ -8,8 +8,6 @@ export const currentUser: User = {
   role: 'Product Lead & Director',
   department: 'Producto & Operaciones',
   status: 'disponible',
-  activeProjectsCount: 6,
-  pendingTasksCount: 12,
 };
 
 export const mockUsers: User[] = [
@@ -22,8 +20,6 @@ export const mockUsers: User[] = [
     role: 'Senior Frontend Engineer',
     department: 'Tecnología',
     status: 'disponible',
-    activeProjectsCount: 4,
-    pendingTasksCount: 9,
   },
   {
     id: 'usr-3',
@@ -33,8 +29,6 @@ export const mockUsers: User[] = [
     role: 'DevOps & Cloud Architect',
     department: 'Infraestructura',
     status: 'ocupado',
-    activeProjectsCount: 5,
-    pendingTasksCount: 16,
   },
   {
     id: 'usr-4',
@@ -44,8 +38,6 @@ export const mockUsers: User[] = [
     role: 'Senior Product Designer',
     department: 'Diseño UX/UI',
     status: 'disponible',
-    activeProjectsCount: 3,
-    pendingTasksCount: 7,
   },
   {
     id: 'usr-5',
@@ -55,8 +47,6 @@ export const mockUsers: User[] = [
     role: 'Lead Backend Engineer',
     department: 'Tecnología',
     status: 'ocupado',
-    activeProjectsCount: 4,
-    pendingTasksCount: 14,
   },
   {
     id: 'usr-6',
@@ -66,8 +56,6 @@ export const mockUsers: User[] = [
     role: 'QA Automation Lead',
     department: 'Calidad & Pruebas',
     status: 'disponible',
-    activeProjectsCount: 5,
-    pendingTasksCount: 11,
   },
   {
     id: 'usr-7',
@@ -77,8 +65,6 @@ export const mockUsers: User[] = [
     role: 'Security & Compliance Officer',
     department: 'Ciberseguridad',
     status: 'ausente',
-    activeProjectsCount: 2,
-    pendingTasksCount: 5,
   },
 ];
 
@@ -199,7 +185,7 @@ export const initialProjects: Project[] = [
   },
 ];
 
-export const initialTasks: Task[] = [
+const featuredTasks: Task[] = [
   {
     id: 'tsk-1',
     projectId: 'proj-1',
@@ -372,6 +358,62 @@ export const initialTasks: Task[] = [
     createdAt: '2026-08-20T10:00:00Z',
   },
 ];
+
+
+type HistoricTask = [projectId: string, title: string, assignee: number, priority: Task['priority'], status: Task['status'], due: string];
+
+// Earlier work on each project, so progress (share of completed tasks) matches where each project stands.
+const history: HistoricTask[] = [
+  ['proj-1', 'Auditoría de accesibilidad del portal actual', 3, 'media', 'completada', '2026-08-12'],
+  ['proj-1', 'Definir arquitectura de información y navegación', 0, 'alta', 'completada', '2026-08-18'],
+  ['proj-1', 'Maquetar componentes base en Storybook', 1, 'alta', 'completada', '2026-08-28'],
+  ['proj-1', 'Pipeline de despliegue de vista previa por rama', 4, 'media', 'completada', '2026-08-30'],
+  ['proj-2', 'Inventario de servicios y dependencias legacy', 2, 'alta', 'completada', '2026-07-28'],
+  ['proj-3', 'Modelo de datos de cotizaciones y listas de precios', 4, 'alta', 'completada', '2026-06-20'],
+  ['proj-3', 'Diseño del flujo de checkout B2B', 0, 'alta', 'completada', '2026-06-27'],
+  ['proj-3', 'Cálculo de impuestos por país', 4, 'critica', 'completada', '2026-07-10'],
+  ['proj-3', 'Carrito persistente entre dispositivos', 1, 'media', 'completada', '2026-07-18'],
+  ['proj-3', 'Pruebas de integración con Stripe', 5, 'alta', 'completada', '2026-07-29'],
+  ['proj-3', 'Webhooks de conciliación con Adyen', 4, 'alta', 'completada', '2026-08-06'],
+  ['proj-3', 'Correos de confirmación de pedido', 1, 'baja', 'completada', '2026-08-14'],
+  ['proj-3', 'Pruebas de regresión del checkout', 5, 'alta', 'completada', '2026-08-22'],
+  ['proj-3', 'Documentar la API pública de cotizaciones', 0, 'media', 'completada', '2026-08-27'],
+  ['proj-4', 'Prototipo navegable del onboarding', 3, 'alta', 'completada', '2026-08-28'],
+  ['proj-4', 'Sincronización offline de pedidos con SQLite', 1, 'alta', 'en_progreso', '2026-09-19'],
+  ['proj-5', 'Conexión con el servicio de rentas en sandbox', 4, 'alta', 'completada', '2026-07-25'],
+  ['proj-5', 'Generación de XML firmado', 4, 'alta', 'completada', '2026-08-08'],
+  ['proj-5', 'Casos de prueba de notas crédito', 5, 'media', 'completada', '2026-08-20'],
+  ['proj-5', 'Renovar certificados digitales de producción', 0, 'critica', 'pendiente', '2026-09-15'],
+  ['proj-5', 'Reintentos automáticos ante rechazo fiscal', 4, 'media', 'pendiente', '2026-09-22'],
+  ['proj-6', 'Reunión de arranque con la firma auditora', 6, 'media', 'completada', '2026-09-01'],
+  ['proj-6', 'Inventario de activos y dueños de datos', 6, 'alta', 'en_progreso', '2026-09-10'],
+  ['proj-6', 'Política de retención y borrado de datos', 0, 'media', 'pendiente', '2026-09-18'],
+  ['proj-6', 'Revisión trimestral de accesos privilegiados', 2, 'alta', 'pendiente', '2026-09-24'],
+  ['proj-6', 'Registro centralizado de auditoría (SIEM)', 2, 'media', 'pendiente', '2026-10-05'],
+  ['proj-6', 'Simulacro de respuesta a incidentes', 6, 'baja', 'pendiente', '2026-10-14'],
+];
+
+const historicTasks: Task[] = history.map(([projectId, title, assignee, priority, status, due], i) => {
+  const created = new Date(`${due}T15:00:00Z`);
+  created.setUTCDate(created.getUTCDate() - 12);
+  return {
+    id: `tsk-h${i + 1}`,
+    projectId,
+    projectName: initialProjects.find((p) => p.id === projectId)?.name ?? '',
+    title,
+    description: '',
+    assignee: mockUsers[assignee],
+    priority,
+    status,
+    dueDate: due,
+    completed: status === 'completada',
+    subtasks: [],
+    comments: [],
+    createdAt: created.toISOString(),
+  };
+});
+
+export const initialTasks: Task[] = [...featuredTasks, ...historicTasks];
 
 export const initialActivities: ActivityEvent[] = [
   {

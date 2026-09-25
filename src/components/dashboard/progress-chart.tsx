@@ -6,6 +6,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { easeApple } from '@/lib/motion';
 import { useStore } from '@/lib/store';
+import { today } from '@/lib/utils';
 
 type Range = '7d' | '30d' | '90d';
 
@@ -15,46 +16,42 @@ interface Point {
   closed: number; // tasks closed in the bucket
 }
 
-// Portfolio history recorded by the workspace.
-const SERIES: Record<Range, Point[]> = {
-  '7d': [
-    { label: 'jue 27', progress: 61, closed: 3 },
-    { label: 'vie 28', progress: 63, closed: 5 },
-    { label: 'sáb 29', progress: 63, closed: 0 },
-    { label: 'dom 30', progress: 64, closed: 1 },
-    { label: 'lun 31', progress: 67, closed: 6 },
-    { label: 'mar 1', progress: 70, closed: 7 },
-    { label: 'mié 2', progress: 72, closed: 4 },
-  ],
-  '30d': [
-    { label: '4 ago', progress: 38, closed: 9 },
-    { label: '7 ago', progress: 41, closed: 7 },
-    { label: '10 ago', progress: 43, closed: 5 },
-    { label: '13 ago', progress: 47, closed: 11 },
-    { label: '16 ago', progress: 50, closed: 8 },
-    { label: '19 ago', progress: 52, closed: 6 },
-    { label: '22 ago', progress: 55, closed: 10 },
-    { label: '25 ago', progress: 59, closed: 12 },
-    { label: '28 ago', progress: 63, closed: 9 },
-    { label: '31 ago', progress: 67, closed: 13 },
-    { label: '2 sept', progress: 72, closed: 11 },
-  ],
-  '90d': [
-    { label: '9 jun', progress: 8, closed: 14 },
-    { label: '16 jun', progress: 12, closed: 18 },
-    { label: '23 jun', progress: 15, closed: 12 },
-    { label: '30 jun', progress: 19, closed: 21 },
-    { label: '7 jul', progress: 24, closed: 25 },
-    { label: '14 jul', progress: 27, closed: 17 },
-    { label: '21 jul', progress: 31, closed: 22 },
-    { label: '28 jul', progress: 36, closed: 28 },
-    { label: '4 ago', progress: 40, closed: 24 },
-    { label: '11 ago', progress: 46, closed: 30 },
-    { label: '18 ago', progress: 52, closed: 27 },
-    { label: '25 ago', progress: 60, closed: 33 },
-    { label: '2 sept', progress: 72, closed: 36 },
-  ],
+// Shape of the portfolio's recent history (oldest → today). Labels are derived from today's date.
+const SERIES: Record<Range, { step: number; points: Omit<Point, 'label'>[] }> = {
+  '7d': {
+    step: 1,
+    points: [
+      { progress: 61, closed: 3 },
+      { progress: 63, closed: 5 },
+      { progress: 63, closed: 0 },
+      { progress: 64, closed: 1 },
+      { progress: 67, closed: 6 },
+      { progress: 70, closed: 7 },
+      { progress: 72, closed: 4 },
+    ],
+  },
+  '30d': {
+    step: 3,
+    points: [38, 41, 43, 47, 50, 52, 55, 59, 63, 67, 72].map((progress, i) => ({
+      progress,
+      closed: [9, 7, 5, 11, 8, 6, 10, 12, 9, 13, 11][i],
+    })),
+  },
+  '90d': {
+    step: 7,
+    points: [8, 12, 15, 19, 24, 27, 31, 36, 40, 46, 52, 60, 72].map((progress, i) => ({
+      progress,
+      closed: [14, 18, 12, 21, 25, 17, 22, 28, 24, 30, 27, 33, 36][i],
+    })),
+  },
 };
+
+function labelFor(range: Range, daysAgo: number): string {
+  const d = today();
+  d.setDate(d.getDate() - daysAgo);
+  const opts: Intl.DateTimeFormatOptions = range === '7d' ? { weekday: 'short', day: 'numeric' } : { day: 'numeric', month: 'short' };
+  return new Intl.DateTimeFormat('es-ES', opts).format(d).replace(/\./g, '').replace(',', '');
+}
 
 const HEIGHT = 200;
 const PAD = { top: 16, right: 8, bottom: 28, left: 8 };
@@ -96,12 +93,16 @@ export function ProgressChart() {
   // so the chart always agrees with the rings above it.
   const { projects } = useStore();
   const live = projects.filter((p) => p.status !== 'archivado' && p.status !== 'completado');
-  const today = live.length ? Math.round(live.reduce((a, p) => a + p.progress, 0) / live.length) : 0;
-  const points = useMemo(() => {
-    const raw = SERIES[range];
+  const current = live.length ? Math.round(live.reduce((a, p) => a + p.progress, 0) / live.length) : 0;
+  const points: Point[] = useMemo(() => {
+    const { step, points: raw } = SERIES[range];
     const last = raw[raw.length - 1].progress;
-    return raw.map((p) => ({ ...p, progress: Math.round((p.progress / last) * today) }));
-  }, [range, today]);
+    return raw.map((p, i) => ({
+      ...p,
+      label: labelFor(range, (raw.length - 1 - i) * step),
+      progress: Math.round((p.progress / last) * current),
+    }));
+  }, [range, current]);
   const { coords, line, area, min, max } = useMemo(() => {
     const values = points.map((p) => p.progress);
     const lo = Math.max(0, Math.floor((Math.min(...values) - 6) / 10) * 10);
@@ -124,9 +125,9 @@ export function ProgressChart() {
   }, [points, width]);
 
   const active = hover ?? points.length - 1;
-  const current = points[active];
+  const point = points[active];
   const first = points[0];
-  const delta = current.progress - first.progress;
+  const delta = point.progress - first.progress;
   const totalClosed = points.slice(0, active + 1).reduce((a, p) => a + p.closed, 0);
 
   const onPointer = (e: React.PointerEvent<SVGRectElement>) => {
@@ -147,7 +148,7 @@ export function ProgressChart() {
         <div>
           <p className="text-footnote font-medium text-ink-2">Avance acumulado de la cartera</p>
           <div className="mt-1 flex items-baseline gap-2">
-            <AnimatedNumber value={current.progress} suffix="%" className="text-[34px] leading-none font-semibold tracking-[-0.04em] text-ink" />
+            <AnimatedNumber value={point.progress} suffix="%" className="text-[34px] leading-none font-semibold tracking-[-0.04em] text-ink" />
             <span className="text-[13px] font-medium text-green-ink">
               {delta >= 0 ? '+' : ''}
               {delta} pts
@@ -163,7 +164,7 @@ export function ProgressChart() {
                 transition={{ duration: 0.15 }}
                 className="inline-block"
               >
-                {hover === null ? 'Hoy' : current.label} · {totalClosed} tareas cerradas en el periodo
+                {hover === null ? 'Hoy' : point.label} · {totalClosed} tareas cerradas en el periodo
               </motion.span>
             </AnimatePresence>
           </p>

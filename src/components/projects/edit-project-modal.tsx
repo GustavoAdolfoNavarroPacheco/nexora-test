@@ -54,14 +54,14 @@ function EditProjectForm({ project, onDone }: { project: Project; onDone: () => 
       <Input label="Cliente o área" value={clientOrArea} onChange={(e) => setClientOrArea(e.target.value)} />
       <Textarea label="Objetivo" value={description} onChange={(e) => setDescription(e.target.value)} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Select label="Estado" value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus)}>
+        <Select label="Estado" value={status} onValueChange={(v) => setStatus(v as ProjectStatus)}>
           <option value="activo">Activo</option>
           <option value="planificacion">Planificación</option>
           <option value="en_pausa">En pausa</option>
           <option value="completado">Completado</option>
           <option value="archivado">Archivado</option>
         </Select>
-        <Select label="Prioridad" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
+        <Select label="Prioridad" value={priority} onValueChange={(v) => setPriority(v as Priority)}>
           <option value="baja">Baja</option>
           <option value="media">Media</option>
           <option value="alta">Alta</option>

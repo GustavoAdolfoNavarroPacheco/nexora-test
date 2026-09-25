@@ -9,14 +9,14 @@ import { Check } from '@/components/ui/check';
 import { Button } from '@/components/ui/button';
 import { SectionTitle } from '@/components/layout/page-header';
 import { easeApple } from '@/lib/motion';
-import { cn, daysUntil, formatDate } from '@/lib/utils';
+import { cn, daysUntil, formatDate, todayISO } from '@/lib/utils';
 
 /** Vertical timeline. Connectors fill in sequence up to the last reached milestone. */
 export function ProjectMilestones({ milestones, projectId }: { milestones: Milestone[]; projectId: string }) {
   const { toggleMilestone, addMilestone } = useStore();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState('2026-10-01');
+  const [date, setDate] = useState(() => todayISO(14));
   const listRef = useRef<HTMLOListElement>(null);
   const inView = useInView(listRef, { once: true, margin: '0px 0px -10% 0px' });
 

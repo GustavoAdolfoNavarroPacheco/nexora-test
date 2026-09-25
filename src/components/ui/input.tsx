@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import { cn } from '@/lib/utils';
+import { Dropdown, optionsFromChildren } from './dropdown';
 
 const fieldBase =
   'w-full rounded-[12px] bg-fill text-[14px] text-ink placeholder:text-ink-3 shadow-[inset_0_0_0_1px_var(--line)] ' +
@@ -106,35 +107,43 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = 'Textarea';
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps {
   label?: string;
   error?: string;
   helperText?: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+  required?: boolean;
+  disabled?: boolean;
+  id?: string;
+  className?: string;
 }
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, helperText, id, children, ...props }, ref) => {
-    const autoId = useId();
-    const selectId = id || autoId;
-    return (
-      <FieldShell id={selectId} label={label} error={error} helperText={helperText} required={props.required}>
-        <div className="relative flex items-center">
-          <select
-            id={selectId}
-            ref={ref}
-            aria-invalid={Boolean(error)}
-            className={cn(fieldBase, 'h-11 appearance-none pr-10 pl-3.5', error && errorRing, className)}
-            {...props}
-          >
-            {children}
-          </select>
-          <Chevrons className="pointer-events-none absolute right-3.5 text-ink-3" />
-        </div>
-      </FieldShell>
-    );
-  }
-);
-Select.displayName = 'Select';
+const openRing = 'aria-expanded:bg-card aria-expanded:shadow-[inset_0_0_0_1px_var(--accent),0_0_0_4px_var(--accent-soft)]';
+
+/** Form select: a macOS popup menu with a mouse, the native picker on touch screens. */
+export function Select({ className, label, error, helperText, id, children, value, onValueChange, required, disabled }: SelectProps) {
+  const autoId = useId();
+  const selectId = id || autoId;
+  return (
+    <FieldShell id={selectId} label={label} error={error} helperText={helperText} required={required}>
+      <Dropdown
+        id={selectId}
+        label={label ?? ''}
+        value={value}
+        onChange={onValueChange}
+        options={optionsFromChildren(children)}
+        invalid={Boolean(error)}
+        describedBy={error || helperText ? `${selectId}-msg` : undefined}
+        disabled={disabled}
+        className="flex w-full"
+        triggerClassName={cn(fieldBase, openRing, 'h-11 pr-10 pl-3.5', error && errorRing, className)}
+        adornment={<Chevrons className="pointer-events-none absolute right-3.5 text-ink-3" />}
+      />
+    </FieldShell>
+  );
+}
 
 /** macOS popup-button double chevron. */
 export function Chevrons({ className }: { className?: string }) {
@@ -145,7 +154,7 @@ export function Chevrons({ className }: { className?: string }) {
   );
 }
 
-/** Compact pill-shaped native select for toolbars. */
+/** Compact pill-shaped select for toolbars; tinted while a filter is applied. */
 export function PillSelect({
   value,
   onChange,
@@ -160,19 +169,19 @@ export function PillSelect({
   className?: string;
 }) {
   return (
-    <div className={cn('relative inline-flex shrink-0 items-center', className)}>
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-9 max-w-[200px] appearance-none truncate rounded-full pr-8 pl-3.5 text-[13px] font-medium outline-none transition-colors',
-          value ? 'bg-accent-soft text-accent-ink' : 'bg-fill-2 text-ink hover:bg-[color-mix(in_srgb,var(--fill-2)_100%,var(--ink)_6%)]'
-        )}
-      >
-        {children}
-      </select>
-      <Chevrons className={cn('pointer-events-none absolute right-3', value ? 'text-accent-ink' : 'text-ink-3')} />
-    </div>
+    <Dropdown
+      label={label}
+      value={value}
+      onChange={onChange}
+      options={optionsFromChildren(children)}
+      className={cn('shrink-0', className)}
+      triggerClassName={cn(
+        'h-9 max-w-[220px] truncate rounded-full pr-8 pl-3.5 text-[13px] font-medium outline-none transition-colors',
+        value
+          ? 'bg-accent-soft text-accent-ink'
+          : 'bg-fill-2 text-ink hover:bg-[color-mix(in_srgb,var(--fill-2)_100%,var(--ink)_6%)] aria-expanded:bg-[color-mix(in_srgb,var(--fill-2)_100%,var(--ink)_6%)]'
+      )}
+      adornment={<Chevrons className={cn('pointer-events-none absolute right-3', value ? 'text-accent-ink' : 'text-ink-3')} />}
+    />
   );
 }
